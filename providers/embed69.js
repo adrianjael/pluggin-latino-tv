@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-20T16:50:29.053Z
+ * Generado: 2026-04-20T16:55:10.269Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -540,15 +540,11 @@ var require_tmdb = __commonJS({
           const apiKey = "439c478a771f35c05022f9feabcca01c";
           const url = `https://api.themoviedb.org/3/${type}/${tmdbId}/external_ids?api_key=${apiKey}`;
           console.log(`[TMDB] Consultando (${type}): ${tmdbId}`);
-          const controller = new AbortController();
-          const timer = setTimeout(() => controller.abort(), 5e3);
           const response = yield fetch(url, {
             headers: {
               "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            },
-            signal: controller.signal
+            }
           });
-          clearTimeout(timer);
           const data = yield response.json();
           return data.imdb_id || null;
         } catch (e) {
@@ -613,33 +609,14 @@ var require_extractor = __commonJS({
           const url = `https://embed69.org/f/${urlId}`;
           console.log(`[Embed69] Fetching: ${url}`);
           try {
-            const controller = new AbortController();
-            const timer = setTimeout(() => controller.abort(), 8e3);
-            let html;
-            try {
-              const response = yield fetch(url, {
-                method: "GET",
-                headers: {
-                  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                  "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                  "Accept-Language": "es-ES,es;q=0.8,en-US;q=0.5,en;q=0.3"
-                },
-                signal: controller.signal
-              });
-              clearTimeout(timer);
-              if (!response.ok) {
-                console.log(`[Embed69] Error HTTP ${response.status}`);
-                return [];
-              }
-              html = yield response.text();
-            } catch (fetchErr) {
-              clearTimeout(timer);
-              console.log(`[Embed69] Fetch fall\xF3: ${fetchErr.message}`);
+            const html = yield http.get(url);
+            if (!html || typeof html !== "string") {
+              console.log(`[Embed69] Respuesta vac\xEDa o inv\xE1lida`);
               return [];
             }
             const dataLink = parseDataLink(html);
             if (!dataLink || dataLink.length === 0) {
-              console.log(`[Embed69] No se encontr\xF3 dataLink en: ${url}`);
+              console.log(`[Embed69] No se encontr\xF3 dataLink`);
               return [];
             }
             console.log(`[Embed69] ${dataLink.length} idiomas: ${dataLink.map((d) => d.video_language).join(", ")}`);
@@ -667,26 +644,23 @@ var require_extractor = __commonJS({
               if (batch.length === 0)
                 continue;
               console.log(`[Embed69] Resolviendo ${batch.length} embeds (${langCode})...`);
-              const RESOLVER_TIMEOUT = 4e3;
-              const streamPromises = batch.map(
-                (entry) => Promise.race([
-                  resolvers.resolve(entry.servername, entry.link).then((resolved) => {
-                    if (resolved && resolved.url) {
-                      return {
-                        name: `Embed69 (${entry.servername})`,
-                        title: `${entry.language} - ${entry.servername.toUpperCase()}`,
-                        url: resolved.url,
-                        quality: resolved.quality || "Auto",
-                        headers: resolved.headers || {}
-                      };
-                    }
-                    return null;
-                  }).catch(() => null),
-                  new Promise(
-                    (_, reject) => setTimeout(() => reject(new Error("timeout")), RESOLVER_TIMEOUT)
-                  )
-                ]).catch(() => null)
-              );
+              const streamPromises = batch.map((entry) => __async(this, null, function* () {
+                try {
+                  const resolved = yield resolvers.resolve(entry.servername, entry.link);
+                  if (resolved && resolved.url) {
+                    return {
+                      name: `Embed69 (${entry.servername})`,
+                      title: `${entry.language} - ${entry.servername.toUpperCase()}`,
+                      url: resolved.url,
+                      quality: resolved.quality || "Auto",
+                      headers: resolved.headers || {}
+                    };
+                  }
+                } catch (e) {
+                  console.error(`[Embed69] Resolver error: ${e.message}`);
+                }
+                return null;
+              }));
               const results = (yield Promise.all(streamPromises)).filter((s) => !!s);
               if (results.length > 0) {
                 console.log(`[Embed69] \u2713 ${results.length} streams en ${langCode}`);
