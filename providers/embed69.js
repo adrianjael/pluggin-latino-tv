@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-20T14:53:30.577Z
+ * Generado: 2026-04-20T15:08:38.225Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -85,9 +85,50 @@ var require_http = __commonJS({
   }
 });
 
+// src/shared/utils/unpacker.js
+var require_unpacker = __commonJS({
+  "src/shared/utils/unpacker.js"(exports2, module2) {
+    function unpack(code) {
+      try {
+        const match = code.match(/eval\(function\(p,a,c,k,e,[rd]\)\{.*?\}\s*\('([\s\S]*?)',\s*(\d+),\s*(\d+),\s*'([\s\S]*?)'\.split\('\|'\)/);
+        if (!match)
+          return code;
+        let [, p, a, c, k] = match;
+        a = parseInt(a);
+        c = parseInt(c);
+        let kArr = k.split("|");
+        const intToChar = (v, radix) => {
+          const chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+          let res = "";
+          while (v > 0) {
+            res = chars[v % radix] + res;
+            v = Math.floor(v / radix);
+          }
+          return res || "0";
+        };
+        const result = p.replace(/\b\w+\b/g, (e) => {
+          const index = parseInt(e, 36);
+          let word = kArr[index];
+          if (!word) {
+            const altIndex = parseInt(e, a);
+            word = kArr[altIndex];
+          }
+          return word || e;
+        });
+        return result;
+      } catch (e) {
+        console.error("[Unpacker] Error des-empaquetando:", e.message);
+        return code;
+      }
+    }
+    module2.exports = { unpack };
+  }
+});
+
 // src/shared/resolvers/vidhide.js
 var require_vidhide = __commonJS({
   "src/shared/resolvers/vidhide.js"(exports2, module2) {
+    var { unpack } = require_unpacker();
     var USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
     function resolveVidhide(url) {
       return __async(this, null, function* () {
@@ -102,37 +143,12 @@ var require_vidhide = __commonJS({
           });
           const html = yield response.text();
           const evalMatch = html.match(/eval\(function\(p,a,c,k,e,[rd]\)[\s\S]*?\.split\('\|'\)[^\)]*\)\)/);
-          if (!evalMatch) {
-            console.log("[Resolvers] No se encontr\xF3 el empaquetado (eval) en VidHide.");
-            return null;
+          let contentToSearch = html;
+          if (evalMatch) {
+            contentToSearch = unpack(evalMatch[0]);
           }
-          const unpack = (code) => {
-            const match = code.match(/eval\(function\(p,a,c,k,e,[rd]\)\{.*?\}\s*\('([\s\S]*?)',\s*(\d+),\s*(\d+),\s*'([\s\S]*?)'\.split\('\|'\)/);
-            if (!match)
-              return null;
-            let [, p, a, c, k] = match;
-            a = parseInt(a);
-            c = parseInt(c);
-            let kArr = k.split("|");
-            const intToChar = (v, radix) => {
-              const chars = "0123456789abcdefghijklmnopqrstuvwxyz";
-              let res = "";
-              while (v > 0) {
-                res = chars[v % radix] + res;
-                v = Math.floor(v / radix);
-              }
-              return res || "0";
-            };
-            return p.replace(/\b\w+\b/g, (e) => {
-              const index = parseInt(e, 36);
-              return index < kArr.length && kArr[index] ? kArr[index] : intToChar(index, a);
-            });
-          };
-          const unpacked = unpack(evalMatch[0]);
-          if (!unpacked)
-            return null;
-          const hls4 = unpacked.match(/"hls4"\s*:\s*"([^"]+)"/);
-          const hls2 = unpacked.match(/"hls2"\s*:\s*"([^"]+)"/);
+          const hls4 = contentToSearch.match(/"?hls4"?\s*:\s*"([^"]+)"/);
+          const hls2 = contentToSearch.match(/"?hls2"?\s*:\s*"([^"]+)"/);
           const link = (_a = hls4 || hls2) == null ? void 0 : _a[1];
           if (!link)
             return null;
@@ -157,6 +173,7 @@ var require_vidhide = __commonJS({
 // src/shared/resolvers/streamwish.js
 var require_streamwish = __commonJS({
   "src/shared/resolvers/streamwish.js"(exports2, module2) {
+    var { unpack } = require_unpacker();
     var USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
     function resolveStreamwish(url) {
       return __async(this, null, function* () {
@@ -166,36 +183,29 @@ var require_streamwish = __commonJS({
           const originMatch = fetchUrl.match(/^(https?:\/\/[^\/]+)/);
           const origin = originMatch ? originMatch[1] : "";
           const response = yield fetch(fetchUrl, {
-            headers: { "User-Agent": USER_AGENT, "Referer": "https://embed69.org/" }
+            headers: {
+              "User-Agent": USER_AGENT,
+              "Referer": "https://embed69.org/",
+              "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"
+            }
           });
           const html = yield response.text();
-          const directFile = html.match(/file\s*:\s*["']([^"']+)["']/i);
-          if (directFile) {
-            let m3u8Url = directFile[1].startsWith("/") ? origin + directFile[1] : directFile[1];
-            if (m3u8Url.includes("vibuxer.com/stream/")) {
-              try {
-                const redirectRes = yield fetch(m3u8Url, {
-                  method: "GET",
-                  headers: { "User-Agent": USER_AGENT, "Referer": origin + "/" }
-                });
-                if (redirectRes.url && redirectRes.url.includes(".m3u8")) {
-                  m3u8Url = redirectRes.url;
-                }
-              } catch (rErr) {
-              }
+          const evalMatch = html.match(/eval\(function\(p,a,c,k,e,[rd]\)[\s\S]*?\.split\('\|'\)[^\)]*\)\)/);
+          let contentToSearch = html;
+          if (evalMatch) {
+            contentToSearch += "\n" + unpack(evalMatch[0]);
+          }
+          const fileMatch = contentToSearch.match(/(?:file|source|src)\s*:\s*["']([^"']+\.(?:m3u8|mp4)[^"']*)["']/i);
+          if (fileMatch) {
+            let streamUrl = fileMatch[1];
+            if (streamUrl.startsWith("/")) {
+              streamUrl = origin + streamUrl;
             }
-            return { url: m3u8Url, quality: "Auto", headers: { "Referer": origin + "/" } };
+            return { url: streamUrl, quality: "Auto", headers: { "Referer": origin + "/" } };
           }
-          const evalPacked = html.match(/eval\(function\(p,a,c,k,e,[a-z]\)\{[^}]+\}\s*\('([\s\S]+?)',\s*(\d+),\s*(\d+),\s*'([\s\S]+?)'\.split\('\|'\)/);
-          if (evalPacked) {
-            const m3u8Regex = /["']([^"']{30,}\.m3u8[^"']*)['"]/i;
-            const directMatch = html.match(m3u8Regex);
-            if (directMatch)
-              return { url: directMatch[1], quality: "Auto", headers: { "Referer": origin + "/" } };
-          }
-          const fallback = html.match(/https?:\/\/[^"'\s\\]+\.m3u8[^"'\s\\]*/i);
-          if (fallback) {
-            return { url: fallback[0], quality: "Auto", headers: { "Referer": origin + "/" } };
+          const m3u8Fallback = contentToSearch.match(/https?:\/\/[^"'\s\\]+\.m3u8[^"'\s\\]*/i);
+          if (m3u8Fallback) {
+            return { url: m3u8Fallback[0], quality: "Auto", headers: { "Referer": origin + "/" } };
           }
           return null;
         } catch (e) {
@@ -242,28 +252,54 @@ var require_voe = __commonJS({
         try {
           console.log(`[Resolvers] Resolviendo VOE: ${url}`);
           let response = yield fetch(url, {
-            headers: { "User-Agent": USER_AGENT, "Referer": url }
+            headers: {
+              "User-Agent": USER_AGENT,
+              "Referer": "https://embed69.org/"
+            }
           });
           let html = yield response.text();
-          const hlsMatch = /(?:mp4|hls)["']\s*:\s*["']([^"']+)["']/gi;
-          let match;
-          const links = [];
-          while ((match = hlsMatch.exec(html)) !== null) {
-            links.push(match[1]);
+          const jsRedirect = html.match(/window\.location\.href\s*=\s*['"]([^'"]+)['"]/i);
+          if (jsRedirect && jsRedirect[1].includes("http")) {
+            console.log(`[Resolvers] VOE siguiendo redirecci\xF3n JS: ${jsRedirect[1]}`);
+            response = yield fetch(jsRedirect[1], {
+              headers: { "User-Agent": USER_AGENT, "Referer": url }
+            });
+            html = yield response.text();
           }
-          for (let l of links) {
-            if (!l)
+          const linkRegex = /(?:hls|mp4|url|file|src|source)\s*[:=]\s*["']([^"']+)["']/gi;
+          let match;
+          const potentialLinks = [];
+          while ((match = linkRegex.exec(html)) !== null) {
+            potentialLinks.push(match[1]);
+          }
+          for (let rawLink of potentialLinks) {
+            if (!rawLink || rawLink.length < 10)
               continue;
-            let decodedUrl = l;
-            if (decodedUrl.startsWith("aHR0")) {
+            let decoded = rawLink;
+            if (rawLink.startsWith("aHR0") || rawLink.length > 50 && /^[A-Za-z0-9+/=]+$/.test(rawLink)) {
               try {
-                decodedUrl = base64Decode(decodedUrl);
+                const temp = base64Decode(rawLink);
+                if (temp.startsWith("http"))
+                  decoded = temp;
               } catch (e) {
               }
             }
-            if (decodedUrl.includes(".m3u8") || decodedUrl.includes(".mp4")) {
-              return { url: decodedUrl, quality: "Auto", headers: { "Referer": url } };
+            if (decoded.includes(".m3u8") || decoded.includes(".mp4")) {
+              if (decoded.startsWith("/")) {
+                const originMatch = url.match(/^(https?:\/\/[^\/]+)/);
+                if (originMatch)
+                  decoded = originMatch[1] + decoded;
+              }
+              return {
+                url: decoded,
+                quality: "Auto",
+                headers: { "Referer": url }
+              };
             }
+          }
+          const genericFallback = html.match(/https?:\/\/[^"'\s\\]+\.(?:m3u8|mp4)[^"'\s\\]*/i);
+          if (genericFallback) {
+            return { url: genericFallback[0], quality: "Auto", headers: { "Referer": url } };
           }
           return null;
         } catch (e) {
