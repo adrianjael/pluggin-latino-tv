@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-20T16:42:18.713Z
+ * Generado: 2026-04-20T16:45:56.159Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -609,36 +609,19 @@ var require_extractor = __commonJS({
           const url = `https://embed69.org/f/${urlId}`;
           console.log(`[Embed69] Fetching: ${url}`);
           try {
-            const response = yield http.get(url, {
-              "Referer": "https://sololatino.net/",
-              "Accept": "text/html,application/xhtml+xml"
-            });
+            const response = yield http.get(url);
             const html = typeof response === "object" ? JSON.stringify(response) : String(response);
             if (html.startsWith("__STATUS_ERROR__")) {
               const status = html.split(":")[1];
-              return [{
-                name: `\u26A0\uFE0F ERROR HTTP ${status}`,
-                title: `Sitio bloqueado - Status ${status}`,
-                url: "https://google.com/error.m3u8",
-                quality: "Error",
-                headers: {}
-              }];
-            }
-            if (html.includes("Just a moment") || html.includes("challenge-platform")) {
-              return [{
-                name: "\u26A0\uFE0F BLOQUEO CLOUDFLARE",
-                title: "El sitio detect\xF3 bot - Cloudflare",
-                url: "https://google.com/cloudflare.m3u8",
-                quality: "Protegido",
-                headers: {}
-              }];
+              console.log(`[Embed69] Error HTTP ${status} en: ${url}`);
+              return [];
             }
             const dataLink = parseDataLink(html);
             if (!dataLink || dataLink.length === 0) {
               console.log(`[Embed69] No se encontr\xF3 dataLink en: ${url}`);
               return [{
                 name: "\u{1F50D} DEBUG - Sin dataLink",
-                title: `URL: ${url} | HTML len: ${html.length} | Tipo: ${type} S:${season} E:${episode}`,
+                title: `URL: ${url} | HTML len: ${html.length} | S:${season} E:${episode}`,
                 url: "https://google.com/diag.m3u8",
                 quality: "INFO",
                 headers: {}
