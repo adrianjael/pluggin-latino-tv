@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-20T16:37:52.187Z
+ * Generado: 2026-04-20T16:42:18.713Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -567,17 +567,29 @@ var require_extractor = __commonJS({
     function decodeJwtPayload(token) {
       try {
         const parts = token.split(".");
-        if (parts.length !== 3)
+        if (parts.length < 2)
           return null;
-        const base64Url = parts[1];
-        const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-        const jsonPayload = base64Decode(base64);
-        return JSON.parse(jsonPayload);
+        let payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+        payload += "=".repeat((4 - payload.length % 4) % 4);
+        return JSON.parse(base64Decode(payload));
       } catch (e) {
         console.error("Error decodificando JWT:", e.message);
         return null;
       }
     }
+    function parseDataLink(html) {
+      try {
+        const match = html.match(/let\s+dataLink\s*=\s*(\[.+\]);/);
+        if (!match)
+          return null;
+        return JSON.parse(match[1]);
+      } catch (e) {
+        console.error("[Embed69] Error parseando dataLink:", e.message);
+        return null;
+      }
+    }
+    var LANG_PRIORITY = ["LAT", "ESP", "SUB"];
+    var LANG_LABELS = { "LAT": "Latino", "ESP": "Castellano", "SUB": "Subtitulado" };
     var extractor2 = {
       getLinks(id, type, season, episode) {
         return __async(this, null, function* () {
@@ -590,91 +602,95 @@ var require_extractor = __commonJS({
             return [];
           }
           let urlId = imdbId;
-          if (type === "tv" && season !== null && episode !== null) {
-            const ep = String(episode).padStart(2, "0");
-            urlId = `${imdbId}-${season}x${ep}`;
+          if (type === "tv" && season !== null && season !== void 0 && episode !== null && episode !== void 0) {
+            const ep = String(parseInt(episode)).padStart(2, "0");
+            urlId = `${imdbId}-${parseInt(season)}x${ep}`;
           }
           const url = `https://embed69.org/f/${urlId}`;
-          const headers = {
-            "Referer": "https://sololatino.net/",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"
-          };
-          console.log(`[Embed69] Navegando a: ${url} (Referer: sololatino.net)`);
+          console.log(`[Embed69] Fetching: ${url}`);
           try {
-            const response = yield http.get(url, headers);
+            const response = yield http.get(url, {
+              "Referer": "https://sololatino.net/",
+              "Accept": "text/html,application/xhtml+xml"
+            });
             const html = typeof response === "object" ? JSON.stringify(response) : String(response);
             if (html.startsWith("__STATUS_ERROR__")) {
               const status = html.split(":")[1];
               return [{
                 name: `\u26A0\uFE0F ERROR HTTP ${status}`,
-                title: `Sitio Protegido (Cloudflare) - Status ${status}`,
+                title: `Sitio bloqueado - Status ${status}`,
                 url: "https://google.com/error.m3u8",
                 quality: "Error",
                 headers: {}
               }];
             }
-            const match = html.match(/let\s+dataLink\s*=\s*((\[[\s\S]*?\])|(\{[\s\S]*?\}))\s*;/);
-            if (!match) {
-              if (html.includes("Cloudflare") || html.includes("Just a moment")) {
-                return [{
-                  name: "\u26A0\uFE0F BLOQUEO CLOUDFLARE",
-                  title: "El sitio detect\xF3 que eres un robot",
-                  url: "https://google.com/cloudflare.m3u8",
-                  quality: "Protegido",
-                  headers: {}
-                }];
-              }
-              console.log("[Embed69] No se encontr\xF3 'dataLink'. \xBFID inv\xE1lido?");
-              return [];
+            if (html.includes("Just a moment") || html.includes("challenge-platform")) {
+              return [{
+                name: "\u26A0\uFE0F BLOQUEO CLOUDFLARE",
+                title: "El sitio detect\xF3 bot - Cloudflare",
+                url: "https://google.com/cloudflare.m3u8",
+                quality: "Protegido",
+                headers: {}
+              }];
             }
-            const rawData = JSON.parse(match[1].replace(/\\\//g, "/"));
-            const dataMap = Array.isArray(rawData) ? rawData.reduce((acc, item) => {
-              acc[(item.video_language || "LAT").toUpperCase()] = item;
-              return acc;
-            }, {}) : rawData;
-            const languagesToTry = ["LAT", "ESP", "SUB"];
-            const langLabels = { "LAT": "Latino", "ESP": "Castellano", "SUB": "Subtitulado" };
-            for (const langCode of languagesToTry) {
-              const item = dataMap[langCode];
-              if (!item || !item.sortedEmbeds)
+            const dataLink = parseDataLink(html);
+            if (!dataLink || dataLink.length === 0) {
+              console.log(`[Embed69] No se encontr\xF3 dataLink en: ${url}`);
+              return [{
+                name: "\u{1F50D} DEBUG - Sin dataLink",
+                title: `URL: ${url} | HTML len: ${html.length} | Tipo: ${type} S:${season} E:${episode}`,
+                url: "https://google.com/diag.m3u8",
+                quality: "INFO",
+                headers: {}
+              }];
+            }
+            console.log(`[Embed69] ${dataLink.length} idiomas: ${dataLink.map((d) => d.video_language).join(", ")}`);
+            const byLang = {};
+            for (const section of dataLink) {
+              byLang[section.video_language] = section;
+            }
+            for (const langCode of LANG_PRIORITY) {
+              const section = byLang[langCode];
+              if (!section || !section.sortedEmbeds)
                 continue;
-              console.log(`[Embed69] Intentando idioma: ${langCode}...`);
               const batch = [];
-              item.sortedEmbeds.forEach((embed) => {
-                if (embed.link && embed.servername !== "download") {
-                  batch.push({
-                    link: embed.link,
-                    servername: embed.servername,
-                    language: langLabels[langCode]
-                  });
-                }
-              });
+              for (const embed of section.sortedEmbeds) {
+                if (embed.servername === "download")
+                  continue;
+                const payload = decodeJwtPayload(embed.link);
+                if (!payload || !payload.link)
+                  continue;
+                batch.push({
+                  link: payload.link,
+                  servername: embed.servername,
+                  language: LANG_LABELS[langCode] || langCode
+                });
+              }
               if (batch.length === 0)
                 continue;
+              console.log(`[Embed69] Resolviendo ${batch.length} embeds (${langCode})...`);
               const streamPromises = batch.map((entry) => __async(this, null, function* () {
-                const payload = decodeJwtPayload(entry.link);
-                if (payload && payload.link) {
-                  const resolved = yield resolvers.resolve(entry.servername, payload.link);
-                  if (resolved && resolved.url) {
-                    return {
-                      name: `Embed69 (${entry.servername})`,
-                      title: `${entry.language} - ${entry.servername.toUpperCase()}`,
-                      url: resolved.url,
-                      quality: resolved.quality || "Auto",
-                      headers: resolved.headers || {}
-                    };
-                  }
+                const resolved = yield resolvers.resolve(entry.servername, entry.link);
+                if (resolved && resolved.url) {
+                  return {
+                    name: `Embed69 (${entry.servername})`,
+                    title: `${entry.language} - ${entry.servername.toUpperCase()}`,
+                    url: resolved.url,
+                    quality: resolved.quality || "Auto",
+                    headers: resolved.headers || {}
+                  };
                 }
               }));
               const results = (yield Promise.all(streamPromises)).filter((s) => !!s);
               if (results.length > 0) {
-                console.log(`[Embed69] \xC9xito en ${langCode}. Deteniendo b\xFAsqueda.`);
+                console.log(`[Embed69] \u2713 ${results.length} streams en ${langCode}`);
                 return results;
               }
+              console.log(`[Embed69] Sin streams en ${langCode}, intentando siguiente...`);
             }
             return [];
           } catch (error) {
-            console.error(`[Embed69] Error extrayendo streams:`, error.message);
+            console.error(`[Embed69] Error:`, error.message);
             return [];
           }
         });
@@ -722,4 +738,8 @@ function getStreams(tmdbId, mediaType, season, episode) {
     }
   });
 }
-module.exports = { getStreams };
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = { getStreams };
+} else {
+  global.getStreams = getStreams;
+}
