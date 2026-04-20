@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-20T16:15:21.632Z
+ * Generado: 2026-04-20T16:19:06.425Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -53,9 +53,21 @@ var require_http = __commonJS({
             const response = yield fetch(url, {
               method: "GET",
               headers: __spreadValues({
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+                "Accept-Language": "es-ES,es;q=0.8,en-US;q=0.5,en;q=0.3",
+                "DNT": "1",
+                "Connection": "keep-alive",
+                "Upgrade-Insecure-Requests": "1",
+                "Sec-Fetch-Dest": "document",
+                "Sec-Fetch-Mode": "navigate",
+                "Sec-Fetch-Site": "none",
+                "Sec-Fetch-User": "?1"
               }, headers)
             });
+            if (response.status === 403 || response.status === 503) {
+              return `__STATUS_ERROR__:${response.status}`;
+            }
             return yield response.text();
           } catch (error) {
             console.error(`[HTTP GET Error] ${url}:`, error.message);
@@ -585,9 +597,28 @@ var require_extractor = __commonJS({
           try {
             const response = yield http.get(url);
             const html = typeof response === "object" ? JSON.stringify(response) : String(response);
+            if (html.startsWith("__STATUS_ERROR__")) {
+              const status = html.split(":")[1];
+              return [{
+                name: `\u26A0\uFE0F ERROR HTTP ${status}`,
+                title: `Sitio Protegido o Ca\xEDdo (Cloudflare)`,
+                url: "https://google.com/error.m3u8",
+                quality: "Error",
+                headers: {}
+              }];
+            }
             const match = html.match(/let\s+dataLink\s*=\s*((\[[\s\S]*?\])|(\{[\s\S]*?\}))\s*;/);
             if (!match) {
-              console.log("[Embed69] No se encontr\xF3 'dataLink' en el HTML. \xBFFalla de ID o protecci\xF3n Cloudflare?");
+              if (html.includes("Cloudflare") || html.includes("Just a moment") || html.includes("challenge-platform")) {
+                return [{
+                  name: "\u26A0\uFE0F BLOQUEO CLOUDFLARE",
+                  title: "El sitio detect\xF3 que eres un robot",
+                  url: "https://google.com/cloudflare.m3u8",
+                  quality: "Protegido",
+                  headers: {}
+                }];
+              }
+              console.log("[Embed69] No se encontr\xF3 'dataLink'. \xBFID inv\xE1lido?");
               return [];
             }
             const rawData = JSON.parse(match[1]);
