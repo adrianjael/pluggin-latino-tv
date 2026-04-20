@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-20T16:03:09.171Z
+ * Generado: 2026-04-20T16:05:22.908Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -648,8 +648,13 @@ var extractor = require_extractor();
 function getStreams(tmdbId, mediaType, season, episode) {
   return __async(this, null, function* () {
     try {
-      console.log(`[Latino TV] Iniciando b\xFAsqueda para TMDB: ${tmdbId}`);
-      const streams = yield extractor.getLinks(tmdbId, mediaType, season, episode);
+      const rawId = String(tmdbId || "");
+      const idParts = rawId.split(":");
+      const cleanId = idParts[0];
+      const finalSeason = season || (idParts.length > 1 ? parseInt(idParts[1]) : null);
+      const finalEpisode = episode || (idParts.length > 2 ? parseInt(idParts[2]) : null);
+      console.log(`[Latino TV] Buscando TMDB: ${cleanId} (S:${finalSeason} E:${finalEpisode})`);
+      const streams = yield extractor.getLinks(cleanId, mediaType, finalSeason, finalEpisode);
       return streams;
     } catch (error) {
       console.error(`[Latino TV Error]:`, error.message);
