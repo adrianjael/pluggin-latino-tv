@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-20T14:45:25.405Z
+ * Generado: 2026-04-20T14:53:30.577Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -46,17 +46,17 @@ var __async = (__this, __arguments, generator) => {
 // src/embed69/http.js
 var require_http = __commonJS({
   "src/embed69/http.js"(exports2, module2) {
-    var axios = require("axios");
     var http = {
       get(_0) {
         return __async(this, arguments, function* (url, headers = {}) {
           try {
-            const response = yield axios.get(url, {
+            const response = yield fetch(url, {
+              method: "GET",
               headers: __spreadValues({
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
               }, headers)
             });
-            return response.data;
+            return yield response.text();
           } catch (error) {
             console.error(`[HTTP GET Error] ${url}:`, error.message);
             throw error;
@@ -66,8 +66,14 @@ var require_http = __commonJS({
       post(_0, _1) {
         return __async(this, arguments, function* (url, data, headers = {}) {
           try {
-            const response = yield axios.post(url, data, { headers });
-            return response.data;
+            const response = yield fetch(url, {
+              method: "POST",
+              headers: __spreadValues({
+                "Content-Type": "application/x-www-form-urlencoded"
+              }, headers),
+              body: typeof data === "string" ? data : JSON.stringify(data)
+            });
+            return yield response.text();
           } catch (error) {
             console.error(`[HTTP POST Error] ${url}:`, error.message);
             throw error;
@@ -82,21 +88,19 @@ var require_http = __commonJS({
 // src/shared/resolvers/vidhide.js
 var require_vidhide = __commonJS({
   "src/shared/resolvers/vidhide.js"(exports2, module2) {
-    var axios = require("axios");
     var USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
     function resolveVidhide(url) {
       return __async(this, null, function* () {
         var _a;
         try {
           console.log(`[Resolvers] Resolviendo VidHide: ${url}`);
-          const response = yield axios.get(url, {
-            timeout: 15e3,
+          const response = yield fetch(url, {
             headers: {
               "User-Agent": USER_AGENT,
               "Referer": "https://embed69.org/"
             }
           });
-          const html = response.data;
+          const html = yield response.text();
           const evalMatch = html.match(/eval\(function\(p,a,c,k,e,[rd]\)[\s\S]*?\.split\('\|'\)[^\)]*\)\)/);
           if (!evalMatch) {
             console.log("[Resolvers] No se encontr\xF3 el empaquetado (eval) en VidHide.");
@@ -153,36 +157,29 @@ var require_vidhide = __commonJS({
 // src/shared/resolvers/streamwish.js
 var require_streamwish = __commonJS({
   "src/shared/resolvers/streamwish.js"(exports2, module2) {
-    var axios = require("axios");
     var USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
     function resolveStreamwish(url) {
       return __async(this, null, function* () {
-        var _a, _b, _c;
         try {
           console.log(`[Resolvers] Resolviendo Streamwish: ${url}`);
           let fetchUrl = url.replace("hglink.to", "vibuxer.com");
           const originMatch = fetchUrl.match(/^(https?:\/\/[^\/]+)/);
           const origin = originMatch ? originMatch[1] : "";
-          const response = yield axios.get(fetchUrl, {
-            headers: { "User-Agent": USER_AGENT, "Referer": "https://embed69.org/" },
-            timeout: 15e3,
-            maxRedirects: 5
+          const response = yield fetch(fetchUrl, {
+            headers: { "User-Agent": USER_AGENT, "Referer": "https://embed69.org/" }
           });
-          const html = typeof response.data === "string" ? response.data : JSON.stringify(response.data);
+          const html = yield response.text();
           const directFile = html.match(/file\s*:\s*["']([^"']+)["']/i);
           if (directFile) {
             let m3u8Url = directFile[1].startsWith("/") ? origin + directFile[1] : directFile[1];
             if (m3u8Url.includes("vibuxer.com/stream/")) {
               try {
-                const redirectRes = yield axios.get(m3u8Url, {
-                  headers: { "User-Agent": USER_AGENT, "Referer": origin + "/" },
-                  timeout: 8e3,
-                  maxRedirects: 5,
-                  validateStatus: (s) => s < 400
+                const redirectRes = yield fetch(m3u8Url, {
+                  method: "GET",
+                  headers: { "User-Agent": USER_AGENT, "Referer": origin + "/" }
                 });
-                const finalRedirect = ((_b = (_a = redirectRes.request) == null ? void 0 : _a.res) == null ? void 0 : _b.responseUrl) || ((_c = redirectRes.config) == null ? void 0 : _c.url);
-                if (finalRedirect && finalRedirect.includes(".m3u8")) {
-                  m3u8Url = finalRedirect;
+                if (redirectRes.url && redirectRes.url.includes(".m3u8")) {
+                  m3u8Url = redirectRes.url;
                 }
               } catch (rErr) {
               }
@@ -238,19 +235,16 @@ var require_base64 = __commonJS({
 // src/shared/resolvers/voe.js
 var require_voe = __commonJS({
   "src/shared/resolvers/voe.js"(exports2, module2) {
-    var axios = require("axios");
     var { base64Decode } = require_base64();
     var USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
     function resolveVoe(url) {
       return __async(this, null, function* () {
         try {
           console.log(`[Resolvers] Resolviendo VOE: ${url}`);
-          let response = yield axios.get(url, {
-            timeout: 15e3,
-            headers: { "User-Agent": USER_AGENT, "Referer": url },
-            validateStatus: (s) => s < 500
+          let response = yield fetch(url, {
+            headers: { "User-Agent": USER_AGENT, "Referer": url }
           });
-          let html = String(response.data);
+          let html = yield response.text();
           const hlsMatch = /(?:mp4|hls)["']\s*:\s*["']([^"']+)["']/gi;
           let match;
           const links = [];
@@ -311,18 +305,18 @@ var require_resolvers = __commonJS({
 // src/shared/utils/tmdb.js
 var require_tmdb = __commonJS({
   "src/shared/utils/tmdb.js"(exports2, module2) {
-    var axios = require("axios");
     function getImdbId(tmdbId, mediaType) {
       return __async(this, null, function* () {
         try {
           const apiKey = "439c478a771f35c05022f9feabcca01c";
           const url = `https://api.themoviedb.org/3/${mediaType}/${tmdbId}/external_ids?api_key=${apiKey}`;
-          const response = yield axios.get(url, {
+          const response = yield fetch(url, {
             headers: {
               "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
             }
           });
-          return response.data.imdb_id || null;
+          const data = yield response.json();
+          return data.imdb_id || null;
         } catch (e) {
           console.error("[TMDB] Error obteniendo IMDB ID:", e.message);
           return null;
