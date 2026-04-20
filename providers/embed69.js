@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-20T15:55:29.364Z
+ * Generado: 2026-04-20T16:03:09.171Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -580,30 +580,43 @@ var require_extractor = __commonJS({
           try {
             const response = yield http.get(url);
             const html = typeof response === "object" ? JSON.stringify(response) : String(response);
-            const match = html.match(/let\s+dataLink\s*=\s*(\[.*?\]);/);
+            const match = html.match(/let\s+dataLink\s*=\s*((\[[\s\S]*?\])|(\{[\s\S]*?\}))\s*;/);
             if (!match) {
-              console.log("[Embed69] No se encontr\xF3 'dataLink' en el HTML. \xBFQuiz\xE1s no existe el ID o hay un nuevo formato?");
+              console.log("[Embed69] No se encontr\xF3 'dataLink' en el HTML. \xBFFalla de ID o protecci\xF3n Cloudflare?");
               return [];
             }
-            const dataLinkJson = JSON.parse(match[1]);
-            const latData = dataLinkJson.find((item) => item.video_language === "LAT");
-            if (!latData || !Array.isArray(latData.sortedEmbeds)) {
-              console.log("[Embed69] No se encontraron servidores en idioma LAT.");
+            const rawData = JSON.parse(match[1]);
+            const data = Array.isArray(rawData) ? rawData : Object.values(rawData);
+            const langMap = { "LAT": "Latino", "ESP": "Castellano", "SUB": "Subtitulado" };
+            const batch = [];
+            data.forEach((item) => {
+              const langLabel = langMap[(item.video_language || "").toUpperCase()] || "Latino";
+              if (item.sortedEmbeds && Array.isArray(item.sortedEmbeds)) {
+                item.sortedEmbeds.forEach((embed) => {
+                  if (embed.link) {
+                    batch.push({
+                      link: embed.link,
+                      servername: embed.servername,
+                      language: langLabel
+                    });
+                  }
+                });
+              }
+            });
+            if (batch.length === 0) {
+              console.log("[Embed69] No se encontraron servidores disponibles.");
               return [];
             }
-            const streamPromises = latData.sortedEmbeds.map((embed) => __async(this, null, function* () {
-              if (!embed.link)
-                return;
-              const payload = decodeJwtPayload(embed.link);
+            const streamPromises = batch.map((item) => __async(this, null, function* () {
+              const payload = decodeJwtPayload(item.link);
               if (payload && payload.link) {
                 const embedUrl = payload.link;
-                const resolved = yield resolvers.resolve(embed.servername, embedUrl);
+                const resolved = yield resolvers.resolve(item.servername, embedUrl);
                 if (resolved && resolved.url) {
                   return {
-                    name: `Embed69 (${embed.servername})`,
-                    title: `Latino - ${embed.servername.toUpperCase()}`,
+                    name: `Embed69 (${item.servername})`,
+                    title: `${item.language} - ${item.servername.toUpperCase()}`,
                     url: resolved.url,
-                    // Este url YA será mp4 o m3u8
                     quality: resolved.quality || "Auto",
                     headers: resolved.headers || {}
                   };
@@ -611,8 +624,14 @@ var require_extractor = __commonJS({
               }
             }));
             const results = yield Promise.all(streamPromises);
-            const streams = results.filter((s) => s !== void 0 && s !== null);
-            return streams;
+            const streams = results.filter((s) => !!s);
+            return streams.sort((a, b) => {
+              if (a.title.includes("Latino") && !b.title.includes("Latino"))
+                return -1;
+              if (!a.title.includes("Latino") && b.title.includes("Latino"))
+                return 1;
+              return 0;
+            });
           } catch (error) {
             console.error(`[Embed69] Error extrayendo streams:`, error.message);
             return [];

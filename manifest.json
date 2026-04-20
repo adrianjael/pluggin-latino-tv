@@ -1,12 +1,12 @@
 {
     "name": "AdrianJael - Latino",
-    "version": "1.0.7",
+    "version": "1.0.8",
     "scrapers": [
         {
             "id": "embed69",
             "name": "Embed69",
             "description": "Servidor de contenido Latino - Embed69",
-            "version": "1.0.7",
+            "version": "1.0.8",
             "author": "AdrianJael",
             "supportedTypes": [
                 "movie",
