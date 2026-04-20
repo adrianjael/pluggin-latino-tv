@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-20T16:19:06.425Z
+ * Generado: 2026-04-20T16:25:09.929Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -685,26 +685,37 @@ function getStreams(tmdbId, mediaType, season, episode) {
   return __async(this, null, function* () {
     try {
       const rawId = String(tmdbId || "").trim();
+      const type = String(mediaType || "").toLowerCase().includes("movie") ? "movie" : "tv";
+      console.log(`[Latino TV] Cargando v1.2.0 | ID: ${rawId} | Tipo app: ${mediaType} -> TMDB: ${type}`);
       if (rawId.startsWith("tt")) {
-        console.log(`[Latino TV] IMDb ID detectado: ${rawId}`);
-        return yield extractor.getLinks(rawId, mediaType, season, episode);
+        return yield extractor.getLinks(rawId, type, season, episode);
       }
       const idParts = rawId.split(":");
       const cleanId = idParts[0];
-      if (cleanId.startsWith("tt")) {
-        const s = season || (idParts.length > 1 ? parseInt(idParts[1]) : null);
-        const e = episode || (idParts.length > 2 ? parseInt(idParts[2]) : null);
-        return yield extractor.getLinks(cleanId, mediaType, s, e);
+      const s = season || (idParts.length > 1 ? parseInt(idParts[1]) : null);
+      const e = episode || (idParts.length > 2 ? parseInt(idParts[2]) : null);
+      const streams = yield extractor.getLinks(cleanId, type, s, e);
+      if (!streams || streams.length === 0) {
+        return [{
+          name: "\u{1F50D} DIAGN\xD3STICO DE CONEXI\xD3N",
+          title: `Recibido: ${rawId} | Temp: ${s} | Ep: ${e} | Tipo: ${type}`,
+          url: "https://google.com/diag.m3u8",
+          quality: "INFO",
+          headers: {}
+        }];
       }
-      const finalSeason = season || (idParts.length > 1 ? parseInt(idParts[1]) : null);
-      const finalEpisode = episode || (idParts.length > 2 ? parseInt(idParts[2]) : null);
-      console.log(`[Latino TV] Buscando TMDB: ${cleanId} (S:${finalSeason} E:${finalEpisode})`);
-      const streams = yield extractor.getLinks(cleanId, mediaType, finalSeason, finalEpisode);
       return streams;
     } catch (error) {
       console.error(`[Latino TV Error]:`, error.message);
-      return [];
+      return [{
+        name: "\u26A0\uFE0F ERROR CR\xCDTICO DEL PLUGIN",
+        title: error.message,
+        url: "https://google.com/error.mp4",
+        quality: "FAIL",
+        headers: {}
+      }];
     }
   });
 }
+\u5410;
 module.exports = { getStreams };
