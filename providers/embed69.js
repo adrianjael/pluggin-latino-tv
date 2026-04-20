@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-20T16:06:09.196Z
+ * Generado: 2026-04-20T16:14:33.950Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -522,8 +522,10 @@ var require_tmdb = __commonJS({
     function getImdbId(tmdbId, mediaType) {
       return __async(this, null, function* () {
         try {
+          const type = String(mediaType || "").toLowerCase().includes("movie") ? "movie" : "tv";
           const apiKey = "439c478a771f35c05022f9feabcca01c";
-          const url = `https://api.themoviedb.org/3/${mediaType}/${tmdbId}/external_ids?api_key=${apiKey}`;
+          const url = `https://api.themoviedb.org/3/${type}/${tmdbId}/external_ids?api_key=${apiKey}`;
+          console.log(`[TMDB] Consultando (${type}): ${tmdbId}`);
           const response = yield fetch(url, {
             headers: {
               "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -565,9 +567,12 @@ var require_extractor = __commonJS({
     var extractor2 = {
       getLinks(id, type, season, episode) {
         return __async(this, null, function* () {
-          const imdbId = yield tmdb.getImdbId(id, type);
+          let imdbId = String(id || "").startsWith("tt") ? id : null;
           if (!imdbId) {
-            console.log(`[Embed69] No se pudo encontrar el IMDB ID para TMDB ID: ${id}`);
+            imdbId = yield tmdb.getImdbId(id, type);
+          }
+          if (!imdbId) {
+            console.log(`[Embed69] No se pudo obtener el IMDB ID para: ${id}`);
             return [];
           }
           let urlId = imdbId;
@@ -648,9 +653,18 @@ var extractor = require_extractor();
 function getStreams(tmdbId, mediaType, season, episode) {
   return __async(this, null, function* () {
     try {
-      const rawId = String(tmdbId || "");
+      const rawId = String(tmdbId || "").trim();
+      if (rawId.startsWith("tt")) {
+        console.log(`[Latino TV] IMDb ID detectado: ${rawId}`);
+        return yield extractor.getLinks(rawId, mediaType, season, episode);
+      }
       const idParts = rawId.split(":");
       const cleanId = idParts[0];
+      if (cleanId.startsWith("tt")) {
+        const s = season || (idParts.length > 1 ? parseInt(idParts[1]) : null);
+        const e = episode || (idParts.length > 2 ? parseInt(idParts[2]) : null);
+        return yield extractor.getLinks(cleanId, mediaType, s, e);
+      }
       const finalSeason = season || (idParts.length > 1 ? parseInt(idParts[1]) : null);
       const finalEpisode = episode || (idParts.length > 2 ? parseInt(idParts[2]) : null);
       console.log(`[Latino TV] Buscando TMDB: ${cleanId} (S:${finalSeason} E:${finalEpisode})`);
