@@ -1,0 +1,16 @@
+{
+    "name": "Latino TV Plugins",
+    "id": "com.latinotv.plugins",
+    "version": "1.0.0",
+    "description": "Colección de plugins para contenido en Latino",
+    "author": "Adrian",
+    "providers": [
+        {
+            "id": "latino-tv",
+            "name": "Latino TV",
+            "file": "providers/latino-tv.js",
+            "enabled": true,
+            "type": "universal"
+        }
+    ]
+}

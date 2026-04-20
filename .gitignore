@@ -1,0 +1,21 @@
+# Ignorar todo por defecto
+*
+
+# Permitir el archivo .gitignore (este archivo)
+!.gitignore
+
+# Permitir el manifiesto
+!manifest.json
+
+# Permitir la carpeta de proveedores y su contenido
+!providers/
+!providers/**
+
+# Todo lo demás es local:
+# - src/
+# - build.js
+# - package.json
+# - node_modules/
+# - test-local.js
+# - documentacion_nuvio_TV_Android.md
+# - guia.md
