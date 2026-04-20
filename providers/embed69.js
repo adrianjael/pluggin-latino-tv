@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-20T16:55:10.269Z
+ * Generado: 2026-04-20T16:57:09.246Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -644,23 +644,24 @@ var require_extractor = __commonJS({
               if (batch.length === 0)
                 continue;
               console.log(`[Embed69] Resolviendo ${batch.length} embeds (${langCode})...`);
-              const streamPromises = batch.map((entry) => __async(this, null, function* () {
-                try {
-                  const resolved = yield resolvers.resolve(entry.servername, entry.link);
-                  if (resolved && resolved.url) {
-                    return {
-                      name: `Embed69 (${entry.servername})`,
-                      title: `${entry.language} - ${entry.servername.toUpperCase()}`,
-                      url: resolved.url,
-                      quality: resolved.quality || "Auto",
-                      headers: resolved.headers || {}
-                    };
-                  }
-                } catch (e) {
-                  console.error(`[Embed69] Resolver error: ${e.message}`);
-                }
-                return null;
-              }));
+              const RESOLVER_TIMEOUT = 5e3;
+              const streamPromises = batch.map(
+                (entry) => Promise.race([
+                  resolvers.resolve(entry.servername, entry.link).then((resolved) => {
+                    if (resolved && resolved.url) {
+                      return {
+                        name: `Embed69 (${entry.servername})`,
+                        title: `${entry.language} - ${entry.servername.toUpperCase()}`,
+                        url: resolved.url,
+                        quality: resolved.quality || "Auto",
+                        headers: resolved.headers || {}
+                      };
+                    }
+                    return null;
+                  }).catch(() => null),
+                  new Promise((resolve) => setTimeout(() => resolve(null), RESOLVER_TIMEOUT))
+                ])
+              );
               const results = (yield Promise.all(streamPromises)).filter((s) => !!s);
               if (results.length > 0) {
                 console.log(`[Embed69] \u2713 ${results.length} streams en ${langCode}`);
