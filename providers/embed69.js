@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-20T16:31:53.772Z
+ * Generado: 2026-04-20T16:37:52.187Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -627,7 +627,7 @@ var require_extractor = __commonJS({
               console.log("[Embed69] No se encontr\xF3 'dataLink'. \xBFID inv\xE1lido?");
               return [];
             }
-            const rawData = JSON.parse(match[1]);
+            const rawData = JSON.parse(match[1].replace(/\\\//g, "/"));
             const dataMap = Array.isArray(rawData) ? rawData.reduce((acc, item) => {
               acc[(item.video_language || "LAT").toUpperCase()] = item;
               return acc;
