@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-20T15:08:38.225Z
+ * Generado: 2026-04-20T15:55:29.364Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -247,10 +247,23 @@ var require_voe = __commonJS({
   "src/shared/resolvers/voe.js"(exports2, module2) {
     var { base64Decode } = require_base64();
     var USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+    function localAtob(input) {
+      if (!input)
+        return "";
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+      let str = String(input).replace(/=+$/, "").replace(/[\s\n\r\t]/g, "");
+      let output = "";
+      if (str.length % 4 === 1)
+        return "";
+      for (let bc = 0, bs, buffer, idx = 0; buffer = str.charAt(idx++); ~buffer && (bs = bc % 4 ? bs * 64 + buffer : buffer, bc++ % 4) ? output += String.fromCharCode(255 & bs >> (-2 * bc & 6)) : 0) {
+        buffer = chars.indexOf(buffer);
+      }
+      return output;
+    }
     function resolveVoe(url) {
       return __async(this, null, function* () {
         try {
-          console.log(`[Resolvers] Resolviendo VOE: ${url}`);
+          console.log(`[Resolvers] VOE Decrypting (TV-Optimized): ${url}`);
           let response = yield fetch(url, {
             headers: {
               "User-Agent": USER_AGENT,
@@ -258,48 +271,63 @@ var require_voe = __commonJS({
             }
           });
           let html = yield response.text();
-          const jsRedirect = html.match(/window\.location\.href\s*=\s*['"]([^'"]+)['"]/i);
-          if (jsRedirect && jsRedirect[1].includes("http")) {
-            console.log(`[Resolvers] VOE siguiendo redirecci\xF3n JS: ${jsRedirect[1]}`);
-            response = yield fetch(jsRedirect[1], {
-              headers: { "User-Agent": USER_AGENT, "Referer": url }
-            });
-            html = yield response.text();
+          if (html.includes("window.location.href") && html.length < 2e3) {
+            const rm = html.match(/window\.location\.href\s*=\s*['"]([^'"]+)['"]/i);
+            if (rm)
+              return resolveVoe(rm[1]);
           }
-          const linkRegex = /(?:hls|mp4|url|file|src|source)\s*[:=]\s*["']([^"']+)["']/gi;
-          let match;
-          const potentialLinks = [];
-          while ((match = linkRegex.exec(html)) !== null) {
-            potentialLinks.push(match[1]);
-          }
-          for (let rawLink of potentialLinks) {
-            if (!rawLink || rawLink.length < 10)
-              continue;
-            let decoded = rawLink;
-            if (rawLink.startsWith("aHR0") || rawLink.length > 50 && /^[A-Za-z0-9+/=]+$/.test(rawLink)) {
-              try {
-                const temp = base64Decode(rawLink);
-                if (temp.startsWith("http"))
-                  decoded = temp;
-              } catch (e) {
+          const jsonMatch = html.match(/<script type="application\/json">([\s\S]*?)<\/script>/);
+          if (jsonMatch) {
+            try {
+              const parsed = JSON.parse(jsonMatch[1].trim());
+              let encText = Array.isArray(parsed) ? parsed[0] : parsed;
+              if (typeof encText !== "string")
+                return null;
+              let decoded = encText.replace(/[a-zA-Z]/g, (c) => {
+                const code = c.charCodeAt(0);
+                const limit = c <= "Z" ? 90 : 122;
+                const shifted = code + 13;
+                return String.fromCharCode(limit >= shifted ? shifted : shifted - 26);
+              });
+              const noise = ["@$", "^^", "~@", "%?", "*~", "!!", "#&"];
+              for (const n of noise)
+                decoded = decoded.split(n).join("");
+              const b64_1 = localAtob(decoded);
+              if (!b64_1)
+                throw new Error("Stage 1 failed");
+              let shiftedStr = "";
+              for (let j = 0; j < b64_1.length; j++) {
+                shiftedStr += String.fromCharCode(b64_1.charCodeAt(j) - 3);
               }
-            }
-            if (decoded.includes(".m3u8") || decoded.includes(".mp4")) {
-              if (decoded.startsWith("/")) {
-                const originMatch = url.match(/^(https?:\/\/[^\/]+)/);
-                if (originMatch)
-                  decoded = originMatch[1] + decoded;
+              const reversed = shiftedStr.split("").reverse().join("");
+              const decrypted = localAtob(reversed);
+              if (!decrypted)
+                throw new Error("Stage 2 failed");
+              const data = JSON.parse(decrypted);
+              if (data && data.source) {
+                console.log(`[Resolvers] VOE Success! Enlace extra\xEDdo.`);
+                return {
+                  url: data.source,
+                  quality: "1080p",
+                  verified: true,
+                  headers: {
+                    "User-Agent": USER_AGENT,
+                    "Referer": url
+                  }
+                };
               }
-              return {
-                url: decoded,
-                quality: "Auto",
-                headers: { "Referer": url }
-              };
+            } catch (ex) {
+              console.error(`[Resolvers] VOE Decryption error: ${ex.message}`);
             }
           }
-          const genericFallback = html.match(/https?:\/\/[^"'\s\\]+\.(?:m3u8|mp4)[^"'\s\\]*/i);
-          if (genericFallback) {
-            return { url: genericFallback[0], quality: "Auto", headers: { "Referer": url } };
+          const m3u8Match = html.match(/["'](https?:\/\/[^"']+?\.m3u8[^"']*?)["']/i);
+          if (m3u8Match && !m3u8Match[1].includes("test-videos.co.uk")) {
+            return {
+              url: m3u8Match[1],
+              quality: "Auto",
+              verified: false,
+              headers: { "Referer": url, "User-Agent": USER_AGENT }
+            };
           }
           return null;
         } catch (e) {
@@ -312,17 +340,167 @@ var require_voe = __commonJS({
   }
 });
 
+// src/shared/utils/aes_gcm.js
+var require_aes_gcm = __commonJS({
+  "src/shared/utils/aes_gcm.js"(exports2, module2) {
+    var _CryptoJS = typeof CryptoJS !== "undefined" ? CryptoJS : null;
+    function parseB64(b64) {
+      if (!b64 || !_CryptoJS)
+        return null;
+      try {
+        const normalized = b64.replace(/-/g, "+").replace(/_/g, "/");
+        return _CryptoJS.enc.Base64.parse(normalized);
+      } catch (e) {
+        return null;
+      }
+    }
+    function decryptGCM(keyWA, ivWA, ciphertextWithTagWA) {
+      try {
+        if (!keyWA || !ivWA || !ciphertextWithTagWA || !_CryptoJS)
+          return null;
+        const tagSizeWords = 4;
+        const ciphertextWords = ciphertextWithTagWA.words.slice(0, ciphertextWithTagWA.words.length - tagSizeWords);
+        const ciphertextWA = _CryptoJS.lib.WordArray.create(
+          ciphertextWords,
+          ciphertextWithTagWA.sigBytes - 16
+        );
+        let counterWA = ivWA.clone();
+        counterWA.concat(_CryptoJS.lib.WordArray.create([2], 4));
+        const decrypted = _CryptoJS.AES.decrypt(
+          { ciphertext: ciphertextWA },
+          keyWA,
+          {
+            iv: counterWA,
+            mode: _CryptoJS.mode.CTR,
+            padding: _CryptoJS.pad.NoPadding
+          }
+        );
+        return decrypted.toString(_CryptoJS.enc.Utf8);
+      } catch (e) {
+        console.error("[AES-GCM] Error:", e.message);
+        return null;
+      }
+    }
+    function decryptByse(playback) {
+      try {
+        if (!playback || !playback.key_parts || !playback.payload || !playback.iv || !_CryptoJS)
+          return null;
+        let keyWA = parseB64(playback.key_parts[0]);
+        for (let i = 1; i < playback.key_parts.length; i++) {
+          const part = parseB64(playback.key_parts[i]);
+          if (part)
+            keyWA.concat(part);
+        }
+        const ivWA = parseB64(playback.iv);
+        const ciphertextWithTagWA = parseB64(playback.payload);
+        return decryptGCM(keyWA, ivWA, ciphertextWithTagWA);
+      } catch (e) {
+        console.error("[Byse] Failed:", e.message);
+        return null;
+      }
+    }
+    module2.exports = { decryptByse };
+  }
+});
+
+// src/shared/resolvers/filemoon.js
+var require_filemoon = __commonJS({
+  "src/shared/resolvers/filemoon.js"(exports2, module2) {
+    var { unpack } = require_unpacker();
+    var USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+    var { decryptByse } = require_aes_gcm();
+    function resolveFilemoon(url) {
+      return __async(this, null, function* () {
+        var _a, _b, _c, _d;
+        try {
+          console.log(`[Resolvers] Filemoon Shield-Resolving: ${url}`);
+          const urlObj = new URL(url);
+          const hostname = urlObj.hostname;
+          const videoId = urlObj.pathname.split("/").filter((p) => !!p).pop();
+          if (!videoId)
+            return null;
+          try {
+            const playbackUrl = `https://${hostname}/api/videos/${videoId}/embed/playback`;
+            console.log(`[Resolvers] Filemoon consultando API Playback...`);
+            const response2 = yield fetch(playbackUrl, {
+              headers: {
+                "User-Agent": USER_AGENT,
+                "Referer": url,
+                "Origin": `https://${hostname}`,
+                "X-Embed-Parent": url
+              }
+            });
+            if (response2.ok) {
+              const playbackData = yield response2.json();
+              if (playbackData && playbackData.playback) {
+                const decrypted = decryptByse(playbackData.playback);
+                if (decrypted) {
+                  const data = JSON.parse(decrypted);
+                  const directUrl = ((_b = (_a = data == null ? void 0 : data.sources) == null ? void 0 : _a[0]) == null ? void 0 : _b.url) || (data == null ? void 0 : data.url);
+                  if (directUrl) {
+                    console.log(`[Resolvers] Filemoon Shield Success!`);
+                    return {
+                      url: directUrl,
+                      quality: ((_d = (_c = data == null ? void 0 : data.sources) == null ? void 0 : _c[0]) == null ? void 0 : _d.label) || "1080p",
+                      verified: true,
+                      headers: {
+                        "User-Agent": USER_AGENT,
+                        "Referer": `https://${hostname}/`,
+                        "Origin": `https://${hostname}`
+                      }
+                    };
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            console.log(`[Resolvers] Filemoon Shield Fall\xF3: ${e.message}`);
+          }
+          console.log(`[Resolvers] Filemoon Fallback: Buscando Packer...`);
+          let response = yield fetch(url, {
+            headers: { "User-Agent": USER_AGENT, "Referer": "https://embed69.org/" }
+          });
+          let html = yield response.text();
+          const evalMatch = html.match(/eval\(function\(p,a,c,k,e,[rd]\)[\s\S]*?\.split\('\|'\)[^\)]*\)\)/g);
+          let contentToSearch = html;
+          if (evalMatch) {
+            evalMatch.forEach((m) => {
+              try {
+                contentToSearch += "\n" + unpack(m);
+              } catch (e) {
+              }
+            });
+          }
+          const fileMatch = contentToSearch.match(/(?:file|source|src|hls|url)\s*[:=]\s*["']([^"']+\.(?:m3u8|mp4)[^"']*)["']/i);
+          if (fileMatch) {
+            return {
+              url: fileMatch[1],
+              quality: "Auto",
+              headers: { "Referer": url }
+            };
+          }
+          return null;
+        } catch (e) {
+          console.error(`[Resolvers] Error en Filemoon: ${e.message}`);
+          return null;
+        }
+      });
+    }
+    module2.exports = resolveFilemoon;
+  }
+});
+
 // src/shared/resolvers/index.js
 var require_resolvers = __commonJS({
   "src/shared/resolvers/index.js"(exports2, module2) {
     var resolveVidhide = require_vidhide();
     var resolveStreamwish = require_streamwish();
     var resolveVoe = require_voe();
+    var resolveFilemoon = require_filemoon();
     var registry = {
       vidhide: resolveVidhide,
       streamwish: resolveStreamwish,
-      filemoon: resolveStreamwish,
-      // Mismo método que streamwish inicialmente si falla su AES
+      filemoon: resolveFilemoon,
       voe: resolveVoe
     };
     function resolve(servername, url) {
