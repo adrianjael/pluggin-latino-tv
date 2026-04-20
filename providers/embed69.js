@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-20T14:29:07.611Z
+ * Generado: 2026-04-20T14:43:40.264Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -132,11 +132,13 @@ var require_vidhide = __commonJS({
           const link = (_a = hls4 || hls2) == null ? void 0 : _a[1];
           if (!link)
             return null;
-          let finalUrl = link.startsWith("http") ? link : `${new URL(url).origin}${link}`;
+          const originMatch = url.match(/^(https?:\/\/[^\/]+)/);
+          const origin = originMatch ? originMatch[1] : "";
+          let finalUrl = link.startsWith("http") ? link : `${origin}${link}`;
           return {
             url: finalUrl,
             quality: "1080p",
-            headers: { "Referer": `${new URL(url).origin}/` }
+            headers: { "Referer": `${origin}/` }
           };
         } catch (e) {
           console.error(`[Resolvers] Error en VidHide: ${e.message}`);
@@ -159,7 +161,8 @@ var require_streamwish = __commonJS({
         try {
           console.log(`[Resolvers] Resolviendo Streamwish: ${url}`);
           let fetchUrl = url.replace("hglink.to", "vibuxer.com");
-          const origin = new URL(fetchUrl).origin;
+          const originMatch = fetchUrl.match(/^(https?:\/\/[^\/]+)/);
+          const origin = originMatch ? originMatch[1] : "";
           const response = yield axios.get(fetchUrl, {
             headers: { "User-Agent": USER_AGENT, "Referer": "https://embed69.org/" },
             timeout: 15e3,
@@ -208,10 +211,35 @@ var require_streamwish = __commonJS({
   }
 });
 
+// src/shared/utils/base64.js
+var require_base64 = __commonJS({
+  "src/shared/utils/base64.js"(exports2, module2) {
+    function base64Decode(str) {
+      if (typeof str !== "string")
+        return "";
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+      let output = "";
+      str = str.replace(/=+$/, "");
+      if (str.length % 4 === 1)
+        return "";
+      for (let bc = 0, bs, buffer, idx = 0; buffer = str.charAt(idx++); ~buffer && (bs = bc % 4 ? bs * 64 + buffer : buffer, bc++ % 4) ? output += String.fromCharCode(255 & bs >> (-2 * bc & 6)) : 0) {
+        buffer = chars.indexOf(buffer);
+      }
+      try {
+        return decodeURIComponent(escape(output));
+      } catch (e) {
+        return output;
+      }
+    }
+    module2.exports = { base64Decode };
+  }
+});
+
 // src/shared/resolvers/voe.js
 var require_voe = __commonJS({
   "src/shared/resolvers/voe.js"(exports2, module2) {
     var axios = require("axios");
+    var { base64Decode } = require_base64();
     var USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
     function resolveVoe(url) {
       return __async(this, null, function* () {
@@ -235,7 +263,7 @@ var require_voe = __commonJS({
             let decodedUrl = l;
             if (decodedUrl.startsWith("aHR0")) {
               try {
-                decodedUrl = Buffer.from(decodedUrl, "base64").toString("ascii");
+                decodedUrl = base64Decode(decodedUrl);
               } catch (e) {
               }
             }
@@ -311,6 +339,7 @@ var require_extractor = __commonJS({
     var http = require_http();
     var resolvers = require_resolvers();
     var tmdb = require_tmdb();
+    var { base64Decode } = require_base64();
     function decodeJwtPayload(token) {
       try {
         const parts = token.split(".");
@@ -318,7 +347,7 @@ var require_extractor = __commonJS({
           return null;
         const base64Url = parts[1];
         const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-        const jsonPayload = Buffer.from(base64, "base64").toString("utf8");
+        const jsonPayload = base64Decode(base64);
         return JSON.parse(jsonPayload);
       } catch (e) {
         console.error("Error decodificando JWT:", e.message);
