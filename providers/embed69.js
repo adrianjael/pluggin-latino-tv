@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-20T16:25:52.118Z
+ * Generado: 2026-04-20T16:30:21.321Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -147,6 +147,7 @@ var require_vidhide = __commonJS({
         var _a;
         try {
           console.log(`[Resolvers] Resolviendo VidHide: ${url}`);
+          const origin = new URL(url).origin;
           const response = yield fetch(url, {
             headers: {
               "User-Agent": USER_AGENT,
@@ -164,8 +165,6 @@ var require_vidhide = __commonJS({
           const link = (_a = hls4 || hls2) == null ? void 0 : _a[1];
           if (!link)
             return null;
-          const originMatch = url.match(/^(https?:\/\/[^\/]+)/);
-          const origin = originMatch ? originMatch[1] : "";
           let finalUrl = link.startsWith("http") ? link : `${origin}${link}`;
           return {
             url: finalUrl,
@@ -275,14 +274,17 @@ var require_voe = __commonJS({
     function resolveVoe(url) {
       return __async(this, null, function* () {
         try {
-          console.log(`[Resolvers] VOE Decrypting (TV-Optimized): ${url}`);
-          let response = yield fetch(url, {
-            headers: {
-              "User-Agent": USER_AGENT,
-              "Referer": "https://embed69.org/"
-            }
-          });
+          console.log(`[VOE] Resolviendo: ${url}`);
+          let response = yield fetch(url, { headers: { "User-Agent": USER_AGENT, "Referer": url } });
           let html = yield response.text();
+          if (html.includes("permanentToken")) {
+            const redirectMatch = html.match(/window\.location\.href\s*=\s*'([^']+)'/i);
+            if (redirectMatch) {
+              console.log(`[VOE] Siguiendo redirecci\xF3n de token: ${redirectMatch[1]}`);
+              response = yield fetch(redirectMatch[1], { headers: { "User-Agent": USER_AGENT, "Referer": url } });
+              html = yield response.text();
+            }
+          }
           if (html.includes("window.location.href") && html.length < 2e3) {
             const rm = html.match(/window\.location\.href\s*=\s*['"]([^'"]+)['"]/i);
             if (rm)
@@ -593,15 +595,19 @@ var require_extractor = __commonJS({
             urlId = `${imdbId}-${season}x${ep}`;
           }
           const url = `https://embed69.org/f/${urlId}`;
-          console.log(`[Embed69] Navegando a: ${url}`);
+          const headers = {
+            "Referer": "https://sololatino.net/",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"
+          };
+          console.log(`[Embed69] Navegando a: ${url} (Referer: sololatino.net)`);
           try {
-            const response = yield http.get(url);
+            const response = yield http.get(url, headers);
             const html = typeof response === "object" ? JSON.stringify(response) : String(response);
             if (html.startsWith("__STATUS_ERROR__")) {
               const status = html.split(":")[1];
               return [{
                 name: `\u26A0\uFE0F ERROR HTTP ${status}`,
-                title: `Sitio Protegido o Ca\xEDdo (Cloudflare)`,
+                title: `Sitio Protegido (Cloudflare) - Status ${status}`,
                 url: "https://google.com/error.m3u8",
                 quality: "Error",
                 headers: {}
@@ -609,7 +615,7 @@ var require_extractor = __commonJS({
             }
             const match = html.match(/let\s+dataLink\s*=\s*((\[[\s\S]*?\])|(\{[\s\S]*?\}))\s*;/);
             if (!match) {
-              if (html.includes("Cloudflare") || html.includes("Just a moment") || html.includes("challenge-platform")) {
+              if (html.includes("Cloudflare") || html.includes("Just a moment")) {
                 return [{
                   name: "\u26A0\uFE0F BLOQUEO CLOUDFLARE",
                   title: "El sitio detect\xF3 que eres un robot",
@@ -622,52 +628,51 @@ var require_extractor = __commonJS({
               return [];
             }
             const rawData = JSON.parse(match[1]);
-            const data = Array.isArray(rawData) ? rawData : Object.values(rawData);
-            const langMap = { "LAT": "Latino", "ESP": "Castellano", "SUB": "Subtitulado" };
-            const batch = [];
-            data.forEach((item) => {
-              const langLabel = langMap[(item.video_language || "").toUpperCase()] || "Latino";
-              if (item.sortedEmbeds && Array.isArray(item.sortedEmbeds)) {
-                item.sortedEmbeds.forEach((embed) => {
-                  if (embed.link) {
-                    batch.push({
-                      link: embed.link,
-                      servername: embed.servername,
-                      language: langLabel
-                    });
-                  }
-                });
-              }
-            });
-            if (batch.length === 0) {
-              console.log("[Embed69] No se encontraron servidores disponibles.");
-              return [];
-            }
-            const streamPromises = batch.map((item) => __async(this, null, function* () {
-              const payload = decodeJwtPayload(item.link);
-              if (payload && payload.link) {
-                const embedUrl = payload.link;
-                const resolved = yield resolvers.resolve(item.servername, embedUrl);
-                if (resolved && resolved.url) {
-                  return {
-                    name: `Embed69 (${item.servername})`,
-                    title: `${item.language} - ${item.servername.toUpperCase()}`,
-                    url: resolved.url,
-                    quality: resolved.quality || "Auto",
-                    headers: resolved.headers || {}
-                  };
+            const dataMap = Array.isArray(rawData) ? rawData.reduce((acc, item) => {
+              acc[(item.video_language || "LAT").toUpperCase()] = item;
+              return acc;
+            }, {}) : rawData;
+            const languagesToTry = ["LAT", "ESP", "SUB"];
+            const langLabels = { "LAT": "Latino", "ESP": "Castellano", "SUB": "Subtitulado" };
+            for (const langCode of languagesToTry) {
+              const item = dataMap[langCode];
+              if (!item || !item.sortedEmbeds)
+                continue;
+              console.log(`[Embed69] Intentando idioma: ${langCode}...`);
+              const batch = [];
+              item.sortedEmbeds.forEach((embed) => {
+                if (embed.link && embed.servername !== "download") {
+                  batch.push({
+                    link: embed.link,
+                    servername: embed.servername,
+                    language: langLabels[langCode]
+                  });
                 }
+              });
+              if (batch.length === 0)
+                continue;
+              const streamPromises = batch.map((entry) => __async(this, null, function* () {
+                const payload = decodeJwtPayload(entry.link);
+                if (payload && payload.link) {
+                  const resolved = yield resolvers.resolve(entry.servername, payload.link);
+                  if (resolved && resolved.url) {
+                    return {
+                      name: `Embed69 (${entry.servername})`,
+                      title: `${entry.language} - ${entry.servername.toUpperCase()}`,
+                      url: resolved.url,
+                      quality: resolved.quality || "Auto",
+                      headers: resolved.headers || {}
+                    };
+                  }
+                }
+              }));
+              const results = (yield Promise.all(streamPromises)).filter((s) => !!s);
+              if (results.length > 0) {
+                console.log(`[Embed69] \xC9xito en ${langCode}. Deteniendo b\xFAsqueda.`);
+                return results;
               }
-            }));
-            const results = yield Promise.all(streamPromises);
-            const streams = results.filter((s) => !!s);
-            return streams.sort((a, b) => {
-              if (a.title.includes("Latino") && !b.title.includes("Latino"))
-                return -1;
-              if (!a.title.includes("Latino") && b.title.includes("Latino"))
-                return 1;
-              return 0;
-            });
+            }
+            return [];
           } catch (error) {
             console.error(`[Embed69] Error extrayendo streams:`, error.message);
             return [];
