@@ -1,12 +1,12 @@
 {
     "name": "AdrianJael - Latino",
-    "version": "1.2.8",
+    "version": "1.2.9",
     "scrapers": [
         {
             "id": "embed69",
             "name": "Embed69",
-            "description": "Servidor de contenido Latino - v1.2.8 Clean",
-            "version": "1.2.8",
+            "description": "Servidor de contenido Latino - v1.2.9 Timeout Fix",
+            "version": "1.2.9",
             "author": "AdrianJael",
             "supportedTypes": [
                 "movie",
