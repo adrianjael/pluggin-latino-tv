@@ -1,16 +1,27 @@
 {
-    "name": "Latino TV Plugins",
-    "id": "com.latinotv.plugins",
+    "name": "AdrianJael - Latino",
     "version": "1.0.0",
-    "description": "Colección de plugins para contenido en Latino",
-    "author": "Adrian",
-    "providers": [
+    "scrapers": [
         {
-            "id": "latino-tv",
-            "name": "Latino TV",
-            "file": "providers/latino-tv.js",
+            "id": "embed69",
+            "name": "Embed69",
+            "description": "Servidor de contenido Latino - Embed69",
+            "version": "1.0.0",
+            "author": "AdrianJael",
+            "supportedTypes": [
+                "movie",
+                "tv"
+            ],
+            "filename": "providers/embed69.js",
             "enabled": true,
-            "type": "universal"
+            "formats": [
+                "mp4",
+                "m3u8"
+            ],
+            "logo": "https://play-lh.googleusercontent.com/5oy8Mdjfj1sEzBWe5WxuQ_8MqFRC6Yu-PM2c4QkXEN_isAQvqrWeMwZV7z3__lDm8Q",
+            "contentLanguage": [
+                "es"
+            ]
         }
     ]
 }
