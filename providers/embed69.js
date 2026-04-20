@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-20T16:57:09.246Z
+ * Generado: 2026-04-20T17:03:31.612Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -53,21 +53,9 @@ var require_http = __commonJS({
             const response = yield fetch(url, {
               method: "GET",
               headers: __spreadValues({
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-                "Accept-Language": "es-ES,es;q=0.8,en-US;q=0.5,en;q=0.3",
-                "DNT": "1",
-                "Connection": "keep-alive",
-                "Upgrade-Insecure-Requests": "1",
-                "Sec-Fetch-Dest": "document",
-                "Sec-Fetch-Mode": "navigate",
-                "Sec-Fetch-Site": "none",
-                "Sec-Fetch-User": "?1"
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
               }, headers)
             });
-            if (response.status === 403 || response.status === 503) {
-              return `__STATUS_ERROR__:${response.status}`;
-            }
             return yield response.text();
           } catch (error) {
             console.error(`[HTTP GET Error] ${url}:`, error.message);
@@ -567,111 +555,73 @@ var require_extractor = __commonJS({
     function decodeJwtPayload(token) {
       try {
         const parts = token.split(".");
-        if (parts.length < 2)
+        if (parts.length !== 3)
           return null;
-        let payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-        payload += "=".repeat((4 - payload.length % 4) % 4);
-        return JSON.parse(base64Decode(payload));
+        const base64Url = parts[1];
+        const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+        const jsonPayload = base64Decode(base64);
+        return JSON.parse(jsonPayload);
       } catch (e) {
         console.error("Error decodificando JWT:", e.message);
         return null;
       }
     }
-    function parseDataLink(html) {
-      try {
-        const match = html.match(/let\s+dataLink\s*=\s*(\[.+\]);/);
-        if (!match)
-          return null;
-        return JSON.parse(match[1]);
-      } catch (e) {
-        console.error("[Embed69] Error parseando dataLink:", e.message);
-        return null;
-      }
-    }
-    var LANG_PRIORITY = ["LAT", "ESP", "SUB"];
-    var LANG_LABELS = { "LAT": "Latino", "ESP": "Castellano", "SUB": "Subtitulado" };
     var extractor2 = {
       getLinks(id, type, season, episode) {
         return __async(this, null, function* () {
-          let imdbId = String(id || "").startsWith("tt") ? id : null;
+          const imdbId = yield tmdb.getImdbId(id, type);
           if (!imdbId) {
-            imdbId = yield tmdb.getImdbId(id, type);
-          }
-          if (!imdbId) {
-            console.log(`[Embed69] No se pudo obtener el IMDB ID para: ${id}`);
+            console.log(`[Embed69] No se pudo encontrar el IMDB ID para TMDB ID: ${id}`);
             return [];
           }
           let urlId = imdbId;
-          if (type === "tv" && season !== null && season !== void 0 && episode !== null && episode !== void 0) {
-            const ep = String(parseInt(episode)).padStart(2, "0");
-            urlId = `${imdbId}-${parseInt(season)}x${ep}`;
+          if (type === "tv" && season && episode) {
+            const ep = String(episode).padStart(2, "0");
+            urlId = `${imdbId}-${season}x${ep}`;
           }
           const url = `https://embed69.org/f/${urlId}`;
-          console.log(`[Embed69] Fetching: ${url}`);
+          console.log(`[Embed69] Navegando a: ${url}`);
           try {
-            const html = yield http.get(url);
-            if (!html || typeof html !== "string") {
-              console.log(`[Embed69] Respuesta vac\xEDa o inv\xE1lida`);
+            const response = yield http.get(url);
+            const html = typeof response === "object" ? JSON.stringify(response) : String(response);
+            const match = html.match(/let\s+dataLink\s*=\s*(\[.*?\]);/);
+            if (!match) {
+              console.log("[Embed69] No se encontr\xF3 'dataLink' en el HTML.");
               return [];
             }
-            const dataLink = parseDataLink(html);
-            if (!dataLink || dataLink.length === 0) {
-              console.log(`[Embed69] No se encontr\xF3 dataLink`);
-              return [];
-            }
-            console.log(`[Embed69] ${dataLink.length} idiomas: ${dataLink.map((d) => d.video_language).join(", ")}`);
-            const byLang = {};
-            for (const section of dataLink) {
-              byLang[section.video_language] = section;
-            }
+            const dataLinkJson = JSON.parse(match[1]);
+            const LANG_PRIORITY = ["LAT", "ESP", "SUB"];
+            const LANG_LABELS = { "LAT": "Latino", "ESP": "Castellano", "SUB": "Subtitulado" };
             for (const langCode of LANG_PRIORITY) {
-              const section = byLang[langCode];
-              if (!section || !section.sortedEmbeds)
+              const langData = dataLinkJson.find((item) => item.video_language === langCode);
+              if (!langData || !Array.isArray(langData.sortedEmbeds))
                 continue;
-              const batch = [];
-              for (const embed of section.sortedEmbeds) {
-                if (embed.servername === "download")
-                  continue;
+              const streamPromises = langData.sortedEmbeds.map((embed) => __async(this, null, function* () {
+                if (!embed.link)
+                  return;
                 const payload = decodeJwtPayload(embed.link);
-                if (!payload || !payload.link)
-                  continue;
-                batch.push({
-                  link: payload.link,
-                  servername: embed.servername,
-                  language: LANG_LABELS[langCode] || langCode
-                });
-              }
-              if (batch.length === 0)
-                continue;
-              console.log(`[Embed69] Resolviendo ${batch.length} embeds (${langCode})...`);
-              const RESOLVER_TIMEOUT = 5e3;
-              const streamPromises = batch.map(
-                (entry) => Promise.race([
-                  resolvers.resolve(entry.servername, entry.link).then((resolved) => {
-                    if (resolved && resolved.url) {
-                      return {
-                        name: `Embed69 (${entry.servername})`,
-                        title: `${entry.language} - ${entry.servername.toUpperCase()}`,
-                        url: resolved.url,
-                        quality: resolved.quality || "Auto",
-                        headers: resolved.headers || {}
-                      };
-                    }
-                    return null;
-                  }).catch(() => null),
-                  new Promise((resolve) => setTimeout(() => resolve(null), RESOLVER_TIMEOUT))
-                ])
-              );
-              const results = (yield Promise.all(streamPromises)).filter((s) => !!s);
+                if (payload && payload.link) {
+                  const resolved = yield resolvers.resolve(embed.servername, payload.link);
+                  if (resolved && resolved.url) {
+                    return {
+                      name: `Embed69 (${embed.servername})`,
+                      title: `${LANG_LABELS[langCode]} - ${embed.servername.toUpperCase()}`,
+                      url: resolved.url,
+                      quality: resolved.quality || "Auto",
+                      headers: resolved.headers || {}
+                    };
+                  }
+                }
+              }));
+              const results = (yield Promise.all(streamPromises)).filter((s) => s != null);
               if (results.length > 0) {
                 console.log(`[Embed69] \u2713 ${results.length} streams en ${langCode}`);
                 return results;
               }
-              console.log(`[Embed69] Sin streams en ${langCode}, intentando siguiente...`);
             }
             return [];
           } catch (error) {
-            console.error(`[Embed69] Error:`, error.message);
+            console.error(`[Embed69] Error extrayendo streams:`, error.message);
             return [];
           }
         });
@@ -686,26 +636,13 @@ var extractor = require_extractor();
 function getStreams(tmdbId, mediaType, season, episode) {
   return __async(this, null, function* () {
     try {
-      const rawId = String(tmdbId || "").trim();
-      const type = String(mediaType || "").toLowerCase().includes("movie") ? "movie" : "tv";
-      console.log(`[Latino TV] Cargando v1.2.0 | ID: ${rawId} | Tipo app: ${mediaType} -> TMDB: ${type}`);
-      if (rawId.startsWith("tt")) {
-        return yield extractor.getLinks(rawId, type, season, episode);
-      }
-      const idParts = rawId.split(":");
-      const cleanId = idParts[0];
-      const s = season || (idParts.length > 1 ? parseInt(idParts[1]) : null);
-      const e = episode || (idParts.length > 2 ? parseInt(idParts[2]) : null);
-      const streams = yield extractor.getLinks(cleanId, type, s, e);
-      return streams || [];
+      console.log(`[Latino TV] Iniciando b\xFAsqueda para TMDB: ${tmdbId}`);
+      const streams = yield extractor.getLinks(tmdbId, mediaType, season, episode);
+      return streams;
     } catch (error) {
       console.error(`[Latino TV Error]:`, error.message);
       return [];
     }
   });
 }
-if (typeof module !== "undefined" && module.exports) {
-  module.exports = { getStreams };
-} else {
-  global.getStreams = getStreams;
-}
+module.exports = { getStreams };
