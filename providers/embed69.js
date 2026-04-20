@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-20T16:05:22.908Z
+ * Generado: 2026-04-20T16:06:09.196Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -571,7 +571,7 @@ var require_extractor = __commonJS({
             return [];
           }
           let urlId = imdbId;
-          if (type === "tv" && season && episode) {
+          if (type === "tv" && season !== null && episode !== null) {
             const ep = String(episode).padStart(2, "0");
             urlId = `${imdbId}-${season}x${ep}`;
           }
