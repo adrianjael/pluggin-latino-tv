@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-20T16:25:09.929Z
+ * Generado: 2026-04-20T16:25:52.118Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -717,5 +717,4 @@ function getStreams(tmdbId, mediaType, season, episode) {
     }
   });
 }
-\u5410;
 module.exports = { getStreams };
