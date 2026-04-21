@@ -1,10 +1,8 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-21T20:17:00.375Z
+ * Generado: 2026-04-21T20:18:56.422Z
  */
 var __defProp = Object.defineProperty;
-var __defProps = Object.defineProperties;
-var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getOwnPropSymbols = Object.getOwnPropertySymbols;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
@@ -21,7 +19,6 @@ var __spreadValues = (a, b) => {
     }
   return a;
 };
-var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
 var __commonJS = (cb, mod) => function __require() {
   return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
 };
@@ -157,10 +154,9 @@ var require_vidhide = __commonJS({
           if (!link)
             return null;
           let finalUrl = link.startsWith("http") ? link : `${origin}${link}`;
-          const detectedQuality = hls4 ? "1080p" : hls2 ? "720p" : "HD";
           return {
             url: finalUrl,
-            quality: detectedQuality,
+            quality: "1080p",
             headers: { "Referer": `${origin}/` }
           };
         } catch (e) {
@@ -509,42 +505,11 @@ var require_resolvers = __commonJS({
       filemoon: resolveFilemoon,
       voe: resolveVoe
     };
-    function verifyLink(_0) {
-      return __async(this, arguments, function* (url, headers = {}) {
-        try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 2e3);
-          const response = yield fetch(url, {
-            method: "GET",
-            headers: __spreadProps(__spreadValues({}, headers), {
-              "Range": "bytes=0-100",
-              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            }),
-            signal: controller.signal
-          });
-          clearTimeout(timeoutId);
-          if (response.status >= 400) {
-            console.log(`[Verify] \u{1F480} Enlace ca\xEDdo (${response.status}): ${url.substring(0, 50)}...`);
-            return false;
-          }
-          return true;
-        } catch (e) {
-          console.log(`[Verify] \u274C Error verificando: ${e.message}`);
-          return false;
-        }
-      });
-    }
     function resolve(servername, url) {
       return __async(this, null, function* () {
         const name = String(servername).toLowerCase().trim();
         if (registry[name]) {
-          const result = yield registry[name](url);
-          if (result && result.url) {
-            const isAlive = yield verifyLink(result.url, result.headers || {});
-            if (!isAlive)
-              return null;
-          }
-          return result;
+          return yield registry[name](url);
         }
         return null;
       });
@@ -580,70 +545,6 @@ var require_tmdb = __commonJS({
   }
 });
 
-// src/shared/utils/quality.js
-var require_quality = __commonJS({
-  "src/shared/utils/quality.js"(exports2, module2) {
-    var qualityMarkers = [
-      // Patrones con 'p' o delimitadores (simplificado para QuickJS)
-      { pattern: /2160p|4kp|[._\-/]2160[._\-/]|[._\-/]4k[._\-/]/i, label: "4K" },
-      { pattern: /1080p|[._\-/]1080[._\-/]/i, label: "1080p" },
-      { pattern: /720p|[._\-/]720[._\-/]/i, label: "720p" },
-      { pattern: /480p|[._\-/]480[._\-/]/i, label: "480p" },
-      { pattern: /360p|[._\-/]360[._\-/]/i, label: "360p" },
-      // Mapeo específico para Streamwish/Filelions
-      { pattern: /[_,]h[,.]/i, label: "1080p" },
-      { pattern: /[_,]n[,.]/i, label: "720p" },
-      { pattern: /[_,]l[,.]/i, label: "480p" }
-    ];
-    var masterPatterns = [/master/i, /playlist/i, /index\.m3u8/i, /multi/i, /\.urlset/i];
-    function getQualityInfo(url, hint) {
-      const urlLower = String(url).toLowerCase();
-      const urlClean = urlLower.split("?")[0];
-      let detectedLabel = null;
-      for (const marker of qualityMarkers) {
-        if (marker.pattern.test(urlClean)) {
-          detectedLabel = marker.label;
-          break;
-        }
-      }
-      const isDirectFile = urlClean.includes(".mp4") || urlClean.includes(".mkv");
-      const isMaster = !isDirectFile && (masterPatterns.some((p) => p.test(urlClean)) || hint && hint.toLowerCase() === "auto");
-      if (isMaster) {
-        const maxQual = detectedLabel || (hint && hint !== "Auto" ? hint : null);
-        if (maxQual) {
-          const cleanMax = maxQual.replace(/\s*✅/, "");
-          return {
-            display: `Auto/${cleanMax} \u2705`,
-            clean: cleanMax
-          };
-        }
-        return {
-          display: "Auto",
-          clean: ""
-        };
-      }
-      if (detectedLabel) {
-        return {
-          display: `${detectedLabel} \u2705`,
-          clean: detectedLabel
-        };
-      }
-      if (hint && hint !== "Auto") {
-        const cleanHint = hint.replace(/\s*✅/, "");
-        return {
-          display: `${cleanHint} \u2705`,
-          clean: cleanHint
-        };
-      }
-      return {
-        display: "Auto",
-        clean: ""
-      };
-    }
-    module2.exports = { getQualityInfo };
-  }
-});
-
 // src/embed69/extractor.js
 var require_extractor = __commonJS({
   "src/embed69/extractor.js"(exports2, module2) {
@@ -651,7 +552,6 @@ var require_extractor = __commonJS({
     var resolvers = require_resolvers();
     var tmdb = require_tmdb();
     var { base64Decode } = require_base64();
-    var { getQualityInfo } = require_quality();
     function decodeJwtPayload(token) {
       try {
         const parts = token.split(".");
@@ -662,7 +562,6 @@ var require_extractor = __commonJS({
         const jsonPayload = base64Decode(base64);
         return JSON.parse(jsonPayload);
       } catch (e) {
-        console.error("Error decodificando JWT:", e.message);
         return null;
       }
     }
@@ -673,10 +572,8 @@ var require_extractor = __commonJS({
           if (!String(id).startsWith("tt")) {
             imdbId = yield tmdb.getImdbId(id, type);
           }
-          if (!imdbId) {
-            console.log(`[Embed69] No se pudo encontrar el IMDB ID para: ${id}`);
+          if (!imdbId)
             return [];
-          }
           let urlId = imdbId;
           if (type === "tv" && season && episode) {
             const ep = String(episode).padStart(2, "0");
@@ -686,15 +583,12 @@ var require_extractor = __commonJS({
           console.log(`[Embed69] Navegando a: ${url}`);
           try {
             const response = yield http.get(url);
-            const html = typeof response === "object" ? JSON.stringify(response) : String(response);
+            const html = String(response);
             const match = html.match(/let\s+dataLink\s*=\s*([\[\{][\s\S]*?[\]\}]);/);
-            if (!match) {
-              console.log("[Embed69] No se encontr\xF3 'dataLink' en el HTML.");
+            if (!match)
               return [];
-            }
             let dataLinkJson = JSON.parse(match[1]);
             if (!Array.isArray(dataLinkJson)) {
-              console.log("[Embed69] dataLink detectado como Objeto. Normalizando...");
               dataLinkJson = Object.keys(dataLinkJson).map((lang) => ({
                 video_language: lang,
                 sortedEmbeds: dataLinkJson[lang]
@@ -702,7 +596,6 @@ var require_extractor = __commonJS({
             }
             const LANG_PRIORITY = ["LAT"];
             const LANG_LABELS = { "LAT": "Latino" };
-            const streams = [];
             for (const langCode of LANG_PRIORITY) {
               const langData = dataLinkJson.find((item) => item.video_language === langCode);
               if (!langData || !Array.isArray(langData.sortedEmbeds))
@@ -719,7 +612,7 @@ var require_extractor = __commonJS({
                         name: `${LANG_LABELS[langCode] || "Idioma"} - ${embed.servername.toUpperCase()}`,
                         title: "Embed69",
                         language: LANG_LABELS[langCode] || "Latino",
-                        quality: `${resolved.quality || "1080p"} \u2705`,
+                        quality: "1080p \u2705",
                         url: resolved.url
                       };
                     }
@@ -737,7 +630,6 @@ var require_extractor = __commonJS({
             }
             return [];
           } catch (error) {
-            console.error(`[Embed69] Error extrayendo streams:`, error.message);
             return [];
           }
         });
