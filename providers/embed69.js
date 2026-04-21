@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-21T16:57:01.509Z
+ * Generado: 2026-04-21T17:08:05.667Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -505,11 +505,21 @@ var require_resolvers = __commonJS({
       filemoon: resolveFilemoon,
       voe: resolveVoe
     };
+    function withTimeout(promise, ms, servername) {
+      let timeout = new Promise((resolve2) => {
+        let id = setTimeout(() => {
+          clearTimeout(id);
+          console.log(`[Resolvers] \u23F0 Timeout alcanzado para ${servername} (${ms}ms)`);
+          resolve2(null);
+        }, ms);
+      });
+      return Promise.race([promise, timeout]);
+    }
     function resolve(servername, url) {
       return __async(this, null, function* () {
         const name = String(servername).toLowerCase().trim();
         if (registry[name]) {
-          return yield registry[name](url);
+          return yield withTimeout(registry[name](url), 8e3, name);
         }
         return null;
       });

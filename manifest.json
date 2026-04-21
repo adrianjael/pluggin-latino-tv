@@ -1,12 +1,12 @@
 {
     "name": "AdrianJael - Latino",
-    "version": "1.3.3",
+    "version": "1.3.4",
     "scrapers": [
         {
             "id": "embed69",
             "name": "Embed69",
-            "description": "Servidor Latino - v1.3.3 Enhanced Quality",
-            "version": "1.3.3",
+            "description": "Latino Fast-Search - v1.3.4 (Timeout Fix)",
+            "version": "1.3.4",
             "author": "AdrianJael",
             "supportedTypes": [
                 "movie",
