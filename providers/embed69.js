@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-21T18:08:34.087Z
+ * Generado: 2026-04-21T18:13:57.598Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -686,38 +686,28 @@ var require_extractor = __commonJS({
             }
             const LANG_PRIORITY = ["LAT", "ESP", "SUB"];
             const LANG_LABELS = { "LAT": "Latino", "ESP": "Castellano", "SUB": "Subtitulado" };
+            const streams = [];
             for (const langCode of LANG_PRIORITY) {
               const langData = dataLinkJson.find((item) => item.video_language === langCode);
               if (!langData || !Array.isArray(langData.sortedEmbeds))
                 continue;
-              const topEmbeds = langData.sortedEmbeds.slice(0, 8);
-              const streamPromises = topEmbeds.map((embed) => __async(this, null, function* () {
+              for (const embed of langData.sortedEmbeds) {
                 if (!embed.link)
-                  return null;
+                  continue;
                 try {
                   const payload = decodeJwtPayload(embed.link);
                   if (payload && payload.link) {
-                    const resolved = yield resolvers.resolve(embed.servername, payload.link);
-                    if (resolved && resolved.url) {
-                      return {
-                        name: "Embed69",
-                        title: `${LANG_LABELS[langCode] || "Idioma"} - ${embed.servername.toUpperCase()} - Auto`,
-                        url: resolved.url
-                      };
-                    }
+                    streams.push({
+                      name: "Embed69",
+                      title: `${LANG_LABELS[langCode] || "Idioma"} - ${embed.servername.toUpperCase()} - Auto/1080p \u2705`,
+                      url: payload.link
+                    });
                   }
                 } catch (e) {
-                  return null;
                 }
-                return null;
-              }));
-              const results = (yield Promise.all(streamPromises)).filter((s) => s !== null);
-              if (results.length > 0) {
-                console.log(`[Embed69] Modo Rayo: Entregando ${results.length} resultados en ${langCode}`);
-                return results;
               }
             }
-            return [];
+            return streams;
           } catch (error) {
             console.error(`[Embed69] Error extrayendo streams:`, error.message);
             return [];
