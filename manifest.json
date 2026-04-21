@@ -1,12 +1,12 @@
 {
     "name": "AdrianJael - Latino",
-    "version": "1.3.14",
+    "version": "1.3.15",
     "scrapers": [
         {
             "id": "embed69",
             "name": "Embed69",
-            "description": "Latino Fast-Search - v1.3.14 (Balanced-Mode)",
-            "version": "1.3.14",
+            "description": "Latino Fast-Search - v1.3.15 (Ray-Mode)",
+            "version": "1.3.15",
             "author": "AdrianJael",
             "supportedTypes": [
                 "movie",

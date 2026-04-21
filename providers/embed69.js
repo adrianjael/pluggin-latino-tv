@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-21T18:00:57.910Z
+ * Generado: 2026-04-21T18:08:34.087Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -531,7 +531,7 @@ var require_resolvers = __commonJS({
       return __async(this, null, function* () {
         const name = String(servername).toLowerCase().trim();
         if (registry[name]) {
-          return yield withTimeout(registry[name](url), 4e3, name);
+          return yield withTimeout(registry[name](url), 3e3, name);
         }
         return null;
       });
@@ -686,12 +686,12 @@ var require_extractor = __commonJS({
             }
             const LANG_PRIORITY = ["LAT", "ESP", "SUB"];
             const LANG_LABELS = { "LAT": "Latino", "ESP": "Castellano", "SUB": "Subtitulado" };
-            const streams = [];
             for (const langCode of LANG_PRIORITY) {
               const langData = dataLinkJson.find((item) => item.video_language === langCode);
               if (!langData || !Array.isArray(langData.sortedEmbeds))
                 continue;
-              const streamPromises = langData.sortedEmbeds.map((embed) => __async(this, null, function* () {
+              const topEmbeds = langData.sortedEmbeds.slice(0, 8);
+              const streamPromises = topEmbeds.map((embed) => __async(this, null, function* () {
                 if (!embed.link)
                   return null;
                 try {
@@ -711,10 +711,13 @@ var require_extractor = __commonJS({
                 }
                 return null;
               }));
-              const batch = yield Promise.all(streamPromises);
-              streams.push(...batch.filter((s) => s !== null));
+              const results = (yield Promise.all(streamPromises)).filter((s) => s !== null);
+              if (results.length > 0) {
+                console.log(`[Embed69] Modo Rayo: Entregando ${results.length} resultados en ${langCode}`);
+                return results;
+              }
             }
-            return streams;
+            return [];
           } catch (error) {
             console.error(`[Embed69] Error extrayendo streams:`, error.message);
             return [];
