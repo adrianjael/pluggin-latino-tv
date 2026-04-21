@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-21T17:56:05.713Z
+ * Generado: 2026-04-21T17:57:14.914Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -699,7 +699,7 @@ var require_extractor = __commonJS({
                   if (payload && payload.link) {
                     streams.push({
                       name: "Embed69",
-                      title: `${LANG_LABELS[langCode]} - ${embed.servername.toUpperCase()} \xB0 Auto`,
+                      title: `${LANG_LABELS[langCode]} - ${embed.servername.toUpperCase()} - Auto`,
                       url: payload.link
                     });
                   }
