@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-21T20:52:19.861Z
+ * Generado: 2026-04-21T20:56:43.623Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -547,7 +547,9 @@ var require_m3u8 = __commonJS({
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 3e3);
             const response = yield fetch(url, {
-              headers: __spreadValues({}, headers),
+              headers: __spreadValues({
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+              }, headers),
               signal: controller.signal
             });
             clearTimeout(timeoutId);
