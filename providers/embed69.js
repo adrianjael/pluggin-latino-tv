@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-21T21:52:28.797Z
+ * Generado: 2026-04-21T22:04:02.036Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -615,16 +615,21 @@ var require_resolvers = __commonJS({
 // src/shared/utils/tmdb.js
 var require_tmdb = __commonJS({
   "src/shared/utils/tmdb.js"(exports2, module2) {
+    function getTmdbApiKey() {
+      const settings = typeof globalThis !== "undefined" && globalThis.SCRAPER_SETTINGS || {};
+      const appKey = settings.tmdb_api_key || settings.tmdbApiKey || (typeof TMDB_API_KEY !== "undefined" ? TMDB_API_KEY : null);
+      return appKey || "439c478a771f35c05022f9feabcca01c";
+    }
     function getImdbId(tmdbId, mediaType) {
       return __async(this, null, function* () {
         try {
           const type = String(mediaType || "").toLowerCase().includes("movie") ? "movie" : "tv";
-          const apiKey = "439c478a771f35c05022f9feabcca01c";
+          const apiKey = getTmdbApiKey();
           const url = `https://api.themoviedb.org/3/${type}/${tmdbId}/external_ids?api_key=${apiKey}`;
-          console.log(`[TMDB] Consultando (${type}): ${tmdbId}`);
+          console.log(`[TMDB] Consultando (${type}): ${tmdbId} usando API Key: ${apiKey.substring(0, 4)}...`);
           const response = yield fetch(url, {
             headers: {
-              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
             }
           });
           const data = yield response.json();
