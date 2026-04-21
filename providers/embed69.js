@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-21T21:13:09.318Z
+ * Generado: 2026-04-21T21:19:00.773Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -514,7 +514,7 @@ var require_m3u8 = __commonJS({
       },
       getQualityFromContent(content) {
         if (!content)
-          return null;
+          return { quality: null, error: "Empty" };
         try {
           const lines = content.split("\n");
           let bestHeight = 0;
@@ -528,41 +528,38 @@ var require_m3u8 = __commonJS({
               }
             }
           }
-          return bestHeight > 0 ? this.getQualityFromHeight(bestHeight) : null;
+          if (bestHeight > 0) {
+            return { quality: this.getQualityFromHeight(bestHeight), error: null };
+          }
+          return { quality: null, error: "No-Res-Tag" };
         } catch (e) {
-          return null;
+          return { quality: null, error: "Parse-Error" };
         }
       },
       detectRealQuality(_0) {
         return __async(this, arguments, function* (url, headers = {}) {
-          const commonHeaders = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Accept": "*/*"
-          };
           try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 4e3);
+            const timeoutId = setTimeout(() => controller.abort(), 5e3);
             const response = yield fetch(url, {
-              headers: __spreadValues(__spreadValues({}, commonHeaders), headers),
+              headers: __spreadValues({}, headers),
               signal: controller.signal
-            }).catch(() => null);
-            if (response && response.ok) {
-              clearTimeout(timeoutId);
-              const content = yield response.text();
-              return this.getQualityFromContent(content);
-            }
-            const response2 = yield fetch(url, {
-              headers: __spreadValues({}, commonHeaders),
-              signal: controller.signal
-            }).catch(() => null);
-            if (response2 && response2.ok) {
-              clearTimeout(timeoutId);
-              const content = yield response2.text();
-              return this.getQualityFromContent(content);
-            }
-            return null;
+            }).catch((err) => {
+              if (err.name === "AbortError")
+                return { _debugError: "Timeout" };
+              return { _debugError: "Net-Error" };
+            });
+            if (!response)
+              return { quality: null, error: "No-Response" };
+            if (response._debugError)
+              return { quality: null, error: response._debugError };
+            if (!response.ok)
+              return { quality: null, error: `HTTP-${response.status}` };
+            clearTimeout(timeoutId);
+            const content = yield response.text();
+            return this.getQualityFromContent(content);
           } catch (e) {
-            return null;
+            return { quality: null, error: "Crit-Err" };
           }
         });
       }
@@ -592,11 +589,13 @@ var require_resolvers = __commonJS({
           const result = yield registry[name](url);
           if (result && result.url) {
             console.log(`[Resolvers] Detectando calidad real para: ${name}`);
-            const realQuality = yield m3u8Parser.detectRealQuality(result.url, result.headers || {});
-            if (realQuality) {
-              console.log(`[Resolvers] Calidad detectada: ${realQuality}`);
-              result.quality = realQuality;
+            const detection = yield m3u8Parser.detectRealQuality(result.url, result.headers || {});
+            if (detection && detection.quality) {
+              console.log(`[Resolvers] Calidad detectada: ${detection.quality}`);
+              result.quality = detection.quality;
               result.verified = true;
+            } else if (detection && detection.error) {
+              result.debug = detection.error;
             }
           }
           return result;
@@ -698,7 +697,10 @@ var require_extractor = __commonJS({
                   if (payload && payload.link) {
                     const resolved = yield resolvers.resolve(embed.servername, payload.link);
                     if (resolved && resolved.url) {
-                      const qualityLabel = resolved.verified ? `${resolved.quality} \u2705` : resolved.quality || "HD";
+                      let qualityLabel = resolved.verified ? `${resolved.quality} \u2705` : resolved.quality || "HD";
+                      if (!resolved.verified && resolved.debug) {
+                        qualityLabel += ` (${resolved.debug})`;
+                      }
                       return {
                         name: `${LANG_LABELS[langCode] || "Idioma"} - ${embed.servername.toUpperCase()}`,
                         title: "Embed69",
