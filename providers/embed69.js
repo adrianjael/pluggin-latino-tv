@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-21T20:44:52.496Z
+ * Generado: 2026-04-21T20:52:19.861Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -496,53 +496,66 @@ var require_filemoon = __commonJS({
 var require_m3u8 = __commonJS({
   "src/shared/utils/m3u8.js"(exports2, module2) {
     var m3u8Parser = {
-      getBestQuality(content) {
-        if (!content)
-          return null;
-        const lines = content.split("\n");
-        const qualities = [];
-        for (let line of lines) {
-          if (line.includes("RESOLUTION=")) {
-            const match = line.match(/RESOLUTION=\d+x(\d+)/);
-            if (match) {
-              qualities.push(parseInt(match[1]));
-            }
-          } else if (line.includes("BANDWIDTH=")) {
-            const bwMatch = line.match(/BANDWIDTH=(\d+)/);
-            if (bwMatch) {
-              const bw = parseInt(bwMatch[1]);
-              if (bw > 4e6)
-                qualities.push(1080);
-              else if (bw > 2e6)
-                qualities.push(720);
-              else if (bw > 1e6)
-                qualities.push(480);
-            }
-          }
-        }
-        if (qualities.length === 0)
-          return null;
-        const best = qualities.sort((a, b) => b - a)[0];
-        return best + "p";
+      getQualityFromHeight(height) {
+        const h = parseInt(height);
+        if (h >= 2160)
+          return "4K";
+        if (h >= 1440)
+          return "1440p";
+        if (h >= 1080)
+          return "1080p";
+        if (h >= 720)
+          return "720p";
+        if (h >= 480)
+          return "480p";
+        if (h >= 360)
+          return "360p";
+        return "1080p";
       },
       /**
-       * Intenta descargar el M3U8 y extraer la calidad
+       * Extrae la calidad del contenido del archivo o de la estructura de la URL
        */
+      getBestQuality(content, url = "") {
+        if (content) {
+          const lines = content.split("\n");
+          let bestHeight = 0;
+          for (const line of lines) {
+            if (line.includes("RESOLUTION=")) {
+              const match = line.match(/RESOLUTION=\d+x(\d+)/i);
+              if (match) {
+                const height = parseInt(match[1]);
+                if (height > bestHeight)
+                  bestHeight = height;
+              }
+            }
+          }
+          if (bestHeight > 0)
+            return this.getQualityFromHeight(bestHeight);
+        }
+        const qMatch = (url || "").match(/([_-]|\/)(\d{3,4})([pP]|(\.m3u8))?/);
+        if (qMatch) {
+          const h = parseInt(qMatch[2]);
+          if (h >= 360 && h <= 4320)
+            return this.getQualityFromHeight(h);
+        }
+        return null;
+      },
       detectRealQuality(_0) {
         return __async(this, arguments, function* (url, headers = {}) {
+          const urlQuality = this.getBestQuality("", url);
           try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 3e3);
             const response = yield fetch(url, {
               headers: __spreadValues({}, headers),
-              // v1.3.26: Descarga completa para máxima compatibilidad
               signal: controller.signal
             });
             clearTimeout(timeoutId);
             const content = yield response.text();
-            return this.getBestQuality(content);
+            const contentQuality = this.getBestQuality(content, url);
+            return contentQuality || urlQuality;
           } catch (e) {
-            return null;
+            return urlQuality;
           }
         });
       }
