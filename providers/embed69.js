@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-20T17:03:31.612Z
+ * Generado: 2026-04-21T16:57:01.509Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -545,6 +545,64 @@ var require_tmdb = __commonJS({
   }
 });
 
+// src/shared/utils/quality.js
+var require_quality = __commonJS({
+  "src/shared/utils/quality.js"(exports2, module2) {
+    var qualityMarkers = [
+      { pattern: /2160|4k/i, label: "4K" },
+      { pattern: /1080/i, label: "1080p" },
+      { pattern: /720/i, label: "720p" },
+      { pattern: /480/i, label: "480p" },
+      { pattern: /360/i, label: "360p" }
+    ];
+    var masterPatterns = [/master/i, /playlist/i, /index\.m3u8/i, /multi/i];
+    function getQualityInfo(url, hint) {
+      const urlLower = String(url).toLowerCase();
+      let detectedLabel = null;
+      for (const marker of qualityMarkers) {
+        if (marker.pattern.test(urlLower)) {
+          detectedLabel = marker.label;
+          break;
+        }
+      }
+      const isDirectFile = urlLower.includes(".mp4") || urlLower.includes(".mkv");
+      const isMaster = !isDirectFile && (masterPatterns.some((p) => p.test(urlLower)) || hint && hint.toLowerCase() === "auto");
+      if (isMaster) {
+        const maxQual = detectedLabel || (hint && hint !== "Auto" ? hint : null);
+        if (maxQual) {
+          const cleanMax = maxQual.replace(/\s*✅/, "");
+          return {
+            display: `Auto / ${cleanMax} \u2705`,
+            clean: cleanMax
+          };
+        }
+        return {
+          display: "Auto",
+          clean: ""
+        };
+      }
+      if (detectedLabel) {
+        return {
+          display: `${detectedLabel} \u2705`,
+          clean: detectedLabel
+        };
+      }
+      if (hint && hint !== "Auto") {
+        const cleanHint = hint.replace(/\s*✅/, "");
+        return {
+          display: `${cleanHint} \u2705`,
+          clean: cleanHint
+        };
+      }
+      return {
+        display: "Auto",
+        clean: ""
+      };
+    }
+    module2.exports = { getQualityInfo };
+  }
+});
+
 // src/embed69/extractor.js
 var require_extractor = __commonJS({
   "src/embed69/extractor.js"(exports2, module2) {
@@ -552,6 +610,7 @@ var require_extractor = __commonJS({
     var resolvers = require_resolvers();
     var tmdb = require_tmdb();
     var { base64Decode } = require_base64();
+    var { getQualityInfo } = require_quality();
     function decodeJwtPayload(token) {
       try {
         const parts = token.split(".");
@@ -603,11 +662,12 @@ var require_extractor = __commonJS({
                 if (payload && payload.link) {
                   const resolved = yield resolvers.resolve(embed.servername, payload.link);
                   if (resolved && resolved.url) {
+                    const qInfo = getQualityInfo(resolved.url, resolved.quality);
                     return {
-                      name: `Embed69 (${embed.servername})`,
-                      title: `${LANG_LABELS[langCode]} - ${embed.servername.toUpperCase()}`,
+                      name: "Embed69",
+                      title: `${LANG_LABELS[langCode]} - ${embed.servername.toUpperCase()} ${qInfo.clean}`.trim(),
                       url: resolved.url,
-                      quality: resolved.quality || "Auto",
+                      quality: qInfo.display,
                       headers: resolved.headers || {}
                     };
                   }
