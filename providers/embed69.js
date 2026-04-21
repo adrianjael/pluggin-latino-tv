@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-21T21:21:46.294Z
+ * Generado: 2026-04-21T21:26:30.012Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -528,27 +528,31 @@ var require_m3u8 = __commonJS({
               }
             }
           }
-          if (bestHeight > 0) {
+          if (bestHeight > 0)
             return { quality: this.getQualityFromHeight(bestHeight), error: null };
-          }
           return { quality: null, error: "No-Res" };
         } catch (e) {
-          return { quality: null, error: "Parse-Err" };
+          return { quality: null, error: "P-Err" };
         }
       },
       detectRealQuality(_0) {
         return __async(this, arguments, function* (url, headers = {}) {
+          const timer = typeof setTimeout !== "undefined" ? setTimeout : typeof window !== "undefined" && window.setTimeout ? window.setTimeout : typeof global !== "undefined" && global.setTimeout ? global.setTimeout : null;
           try {
+            if (!timer) {
+              const response = yield fetch(url, { headers });
+              const content = yield response.text();
+              return this.getQualityFromContent(content);
+            }
             const timeoutPromise = new Promise(
-              (_, reject) => setTimeout(() => reject(new Error("T-Out")), 5e3)
+              (_, reject) => timer(() => reject(new Error("T-Out")), 6e3)
             );
             const fetchPromise = (() => __async(this, null, function* () {
-              const response = yield fetch(url, { headers }).catch((err) => {
-                throw new Error("Conn-Err");
+              const response = yield fetch(url, { headers }).catch(() => {
+                throw new Error("C-Err");
               });
-              if (!response || !response.ok) {
-                throw new Error(`HTTP-${response ? response.status : "??"}`);
-              }
+              if (!response || !response.ok)
+                throw new Error(`H-${response ? response.status : "?"}`);
               const content = yield response.text();
               return this.getQualityFromContent(content);
             }))();
