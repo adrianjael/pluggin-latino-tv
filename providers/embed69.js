@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-21T21:26:30.012Z
+ * Generado: 2026-04-21T21:38:55.120Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -535,30 +535,22 @@ var require_m3u8 = __commonJS({
           return { quality: null, error: "P-Err" };
         }
       },
+      /**
+       * En Nuvio, fetch es bloqueante y no soporta timeouts reales en JS.
+       * Dejamos que la App gestione la red de forma nativa.
+       */
       detectRealQuality(_0) {
         return __async(this, arguments, function* (url, headers = {}) {
-          const timer = typeof setTimeout !== "undefined" ? setTimeout : typeof window !== "undefined" && window.setTimeout ? window.setTimeout : typeof global !== "undefined" && global.setTimeout ? global.setTimeout : null;
           try {
-            if (!timer) {
-              const response = yield fetch(url, { headers });
-              const content = yield response.text();
-              return this.getQualityFromContent(content);
-            }
-            const timeoutPromise = new Promise(
-              (_, reject) => timer(() => reject(new Error("T-Out")), 6e3)
-            );
-            const fetchPromise = (() => __async(this, null, function* () {
-              const response = yield fetch(url, { headers }).catch(() => {
-                throw new Error("C-Err");
-              });
-              if (!response || !response.ok)
-                throw new Error(`H-${response ? response.status : "?"}`);
-              const content = yield response.text();
-              return this.getQualityFromContent(content);
-            }))();
-            return yield Promise.race([fetchPromise, timeoutPromise]);
+            const response = yield fetch(url, { headers }).catch(() => null);
+            if (!response)
+              return { quality: null, error: "Net-Err" };
+            if (!response.ok)
+              return { quality: null, error: "H-" + response.status };
+            const content = yield response.text();
+            return this.getQualityFromContent(content);
           } catch (e) {
-            return { quality: null, error: e.message || "Err" };
+            return { quality: null, error: "Err" };
           }
         });
       }
