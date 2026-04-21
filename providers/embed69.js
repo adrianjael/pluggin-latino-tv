@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-21T17:48:11.405Z
+ * Generado: 2026-04-21T17:50:34.916Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -518,6 +518,11 @@ var require_resolvers = __commonJS({
           if (timeoutId)
             clearTimeout(timeoutId);
           return res;
+        }).catch((err) => {
+          if (timeoutId)
+            clearTimeout(timeoutId);
+          console.log(`[Resolvers] \u274C Error en ${servername}: ${err.message}`);
+          return null;
         }),
         timeoutPromise
       ]);
