@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-21T20:28:18.851Z
+ * Generado: 2026-04-21T20:33:24.330Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -579,6 +579,7 @@ var require_resolvers = __commonJS({
             if (realQuality) {
               console.log(`[Resolvers] Calidad detectada: ${realQuality}`);
               result.quality = realQuality;
+              result.verified = true;
             }
           }
           return result;
@@ -680,11 +681,12 @@ var require_extractor = __commonJS({
                   if (payload && payload.link) {
                     const resolved = yield resolvers.resolve(embed.servername, payload.link);
                     if (resolved && resolved.url) {
+                      const qualityLabel = resolved.verified ? `${resolved.quality} \u2705` : resolved.quality || "HD";
                       return {
                         name: `${LANG_LABELS[langCode] || "Idioma"} - ${embed.servername.toUpperCase()}`,
                         title: "Embed69",
                         language: LANG_LABELS[langCode] || "Latino",
-                        quality: `${resolved.quality || "1080p"} \u2705`,
+                        quality: qualityLabel,
                         url: resolved.url
                       };
                     }
