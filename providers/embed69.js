@@ -1,8 +1,10 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-21T20:18:56.422Z
+ * Generado: 2026-04-21T20:28:18.851Z
  */
 var __defProp = Object.defineProperty;
+var __defProps = Object.defineProperties;
+var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getOwnPropSymbols = Object.getOwnPropertySymbols;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
@@ -19,6 +21,7 @@ var __spreadValues = (a, b) => {
     }
   return a;
 };
+var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
 var __commonJS = (cb, mod) => function __require() {
   return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
 };
@@ -492,6 +495,65 @@ var require_filemoon = __commonJS({
   }
 });
 
+// src/shared/utils/m3u8.js
+var require_m3u8 = __commonJS({
+  "src/shared/utils/m3u8.js"(exports2, module2) {
+    var m3u8Parser = {
+      getBestQuality(content) {
+        if (!content)
+          return null;
+        const lines = content.split("\n");
+        const qualities = [];
+        for (let line of lines) {
+          if (line.includes("RESOLUTION=")) {
+            const match = line.match(/RESOLUTION=\d+x(\d+)/);
+            if (match) {
+              qualities.push(parseInt(match[1]));
+            }
+          } else if (line.includes("BANDWIDTH=")) {
+            const bwMatch = line.match(/BANDWIDTH=(\d+)/);
+            if (bwMatch) {
+              const bw = parseInt(bwMatch[1]);
+              if (bw > 4e6)
+                qualities.push(1080);
+              else if (bw > 2e6)
+                qualities.push(720);
+              else if (bw > 1e6)
+                qualities.push(480);
+            }
+          }
+        }
+        if (qualities.length === 0)
+          return null;
+        const best = qualities.sort((a, b) => b - a)[0];
+        return best + "p";
+      },
+      /**
+       * Intenta descargar el M3U8 y extraer la calidad
+       */
+      detectRealQuality(_0) {
+        return __async(this, arguments, function* (url, headers = {}) {
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 1500);
+            const response = yield fetch(url, {
+              headers: __spreadProps(__spreadValues({}, headers), { "Range": "bytes=0-2048" }),
+              // Solo el principio del archivo
+              signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            const content = yield response.text();
+            return this.getBestQuality(content);
+          } catch (e) {
+            return null;
+          }
+        });
+      }
+    };
+    module2.exports = m3u8Parser;
+  }
+});
+
 // src/shared/resolvers/index.js
 var require_resolvers = __commonJS({
   "src/shared/resolvers/index.js"(exports2, module2) {
@@ -499,6 +561,7 @@ var require_resolvers = __commonJS({
     var resolveStreamwish = require_streamwish();
     var resolveVoe = require_voe();
     var resolveFilemoon = require_filemoon();
+    var m3u8Parser = require_m3u8();
     var registry = {
       vidhide: resolveVidhide,
       streamwish: resolveStreamwish,
@@ -509,7 +572,16 @@ var require_resolvers = __commonJS({
       return __async(this, null, function* () {
         const name = String(servername).toLowerCase().trim();
         if (registry[name]) {
-          return yield registry[name](url);
+          const result = yield registry[name](url);
+          if (result && result.url) {
+            console.log(`[Resolvers] Detectando calidad real para: ${name}`);
+            const realQuality = yield m3u8Parser.detectRealQuality(result.url, result.headers || {});
+            if (realQuality) {
+              console.log(`[Resolvers] Calidad detectada: ${realQuality}`);
+              result.quality = realQuality;
+            }
+          }
+          return result;
         }
         return null;
       });
@@ -612,7 +684,7 @@ var require_extractor = __commonJS({
                         name: `${LANG_LABELS[langCode] || "Idioma"} - ${embed.servername.toUpperCase()}`,
                         title: "Embed69",
                         language: LANG_LABELS[langCode] || "Latino",
-                        quality: "1080p \u2705",
+                        quality: `${resolved.quality || "1080p"} \u2705`,
                         url: resolved.url
                       };
                     }
