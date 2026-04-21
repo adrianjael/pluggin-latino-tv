@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-21T20:33:24.330Z
+ * Generado: 2026-04-21T20:38:55.653Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -535,7 +535,7 @@ var require_m3u8 = __commonJS({
         return __async(this, arguments, function* (url, headers = {}) {
           try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 1500);
+            const timeoutId = setTimeout(() => controller.abort(), 3e3);
             const response = yield fetch(url, {
               headers: __spreadProps(__spreadValues({}, headers), { "Range": "bytes=0-2048" }),
               // Solo el principio del archivo
