@@ -1,12 +1,12 @@
 {
-    "name": "AdrianJael - Latino",
-    "version": "1.3.41",
+    "name": "Nuvio Latino TV",
+    "version": "2.0.0",
     "scrapers": [
         {
             "id": "embed69",
             "name": "Embed69",
             "description": "Latino - si tiene ✅= Calidad Real, si no = Calidad Genérica",
-            "version": "1.3.41",
+            "version": "1.3.42",
             "author": "AdrianJael",
             "supportedTypes": [
                 "movie",
@@ -19,6 +19,27 @@
                 "m3u8"
             ],
             "logo": "https://play-lh.googleusercontent.com/5oy8Mdjfj1sEzBWe5WxuQ_8MqFRC6Yu-PM2c4QkXEN_isAQvqrWeMwZV7z3__lDm8Q",
+            "contentLanguage": [
+                "es"
+            ]
+        },
+        {
+            "id": "detodo",
+            "name": "DeTodoPeliculas",
+            "description": "Latino - Servidores rápidos (Voe, VidHide, Streamwish)",
+            "version": "1.5.0",
+            "author": "AdrianJael",
+            "supportedTypes": [
+                "movie",
+                "tv"
+            ],
+            "filename": "providers/detodo.js",
+            "enabled": true,
+            "formats": [
+                "mp4",
+                "m3u8"
+            ],
+            "logo": "https://detodopeliculas.net/wp-content/uploads/2023/01/header-removebg-preview.png",
             "contentLanguage": [
                 "es"
             ]
