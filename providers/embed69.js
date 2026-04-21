@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-21T21:19:00.773Z
+ * Generado: 2026-04-21T21:21:46.294Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -531,35 +531,30 @@ var require_m3u8 = __commonJS({
           if (bestHeight > 0) {
             return { quality: this.getQualityFromHeight(bestHeight), error: null };
           }
-          return { quality: null, error: "No-Res-Tag" };
+          return { quality: null, error: "No-Res" };
         } catch (e) {
-          return { quality: null, error: "Parse-Error" };
+          return { quality: null, error: "Parse-Err" };
         }
       },
       detectRealQuality(_0) {
         return __async(this, arguments, function* (url, headers = {}) {
           try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5e3);
-            const response = yield fetch(url, {
-              headers: __spreadValues({}, headers),
-              signal: controller.signal
-            }).catch((err) => {
-              if (err.name === "AbortError")
-                return { _debugError: "Timeout" };
-              return { _debugError: "Net-Error" };
-            });
-            if (!response)
-              return { quality: null, error: "No-Response" };
-            if (response._debugError)
-              return { quality: null, error: response._debugError };
-            if (!response.ok)
-              return { quality: null, error: `HTTP-${response.status}` };
-            clearTimeout(timeoutId);
-            const content = yield response.text();
-            return this.getQualityFromContent(content);
+            const timeoutPromise = new Promise(
+              (_, reject) => setTimeout(() => reject(new Error("T-Out")), 5e3)
+            );
+            const fetchPromise = (() => __async(this, null, function* () {
+              const response = yield fetch(url, { headers }).catch((err) => {
+                throw new Error("Conn-Err");
+              });
+              if (!response || !response.ok) {
+                throw new Error(`HTTP-${response ? response.status : "??"}`);
+              }
+              const content = yield response.text();
+              return this.getQualityFromContent(content);
+            }))();
+            return yield Promise.race([fetchPromise, timeoutPromise]);
           } catch (e) {
-            return { quality: null, error: "Crit-Err" };
+            return { quality: null, error: e.message || "Err" };
           }
         });
       }
