@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-21T18:13:57.598Z
+ * Generado: 2026-04-21T18:23:51.502Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -656,9 +656,12 @@ var require_extractor = __commonJS({
     var extractor2 = {
       getLinks(id, type, season, episode) {
         return __async(this, null, function* () {
-          const imdbId = yield tmdb.getImdbId(id, type);
+          let imdbId = id;
+          if (!String(id).startsWith("tt")) {
+            imdbId = yield tmdb.getImdbId(id, type);
+          }
           if (!imdbId) {
-            console.log(`[Embed69] No se pudo encontrar el IMDB ID para TMDB ID: ${id}`);
+            console.log(`[Embed69] No se pudo encontrar el IMDB ID para: ${id}`);
             return [];
           }
           let urlId = imdbId;
@@ -698,8 +701,11 @@ var require_extractor = __commonJS({
                   const payload = decodeJwtPayload(embed.link);
                   if (payload && payload.link) {
                     streams.push({
-                      name: "Embed69",
-                      title: `${LANG_LABELS[langCode] || "Idioma"} - ${embed.servername.toUpperCase()} - Auto/1080p \u2705`,
+                      name: `${LANG_LABELS[langCode] || "Idioma"} - ${embed.servername.toUpperCase()}`,
+                      title: "Embed69",
+                      // Fallback para compatibilidad
+                      language: LANG_LABELS[langCode] || "Latino",
+                      quality: "1080p \u2705",
                       url: payload.link
                     });
                   }
