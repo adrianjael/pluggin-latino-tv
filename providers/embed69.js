@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-21T20:56:43.623Z
+ * Generado: 2026-04-21T21:02:16.508Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -510,7 +510,7 @@ var require_m3u8 = __commonJS({
           return "480p";
         if (h >= 360)
           return "360p";
-        return "1080p";
+        return null;
       },
       /**
        * Extrae la calidad del contenido del archivo o de la estructura de la URL
@@ -532,17 +532,21 @@ var require_m3u8 = __commonJS({
           if (bestHeight > 0)
             return this.getQualityFromHeight(bestHeight);
         }
-        const qMatch = (url || "").match(/([_-]|\/)(\d{3,4})([pP]|(\.m3u8))?/);
-        if (qMatch) {
-          const h = parseInt(qMatch[2]);
-          if (h >= 360 && h <= 4320)
-            return this.getQualityFromHeight(h);
+        const cleanUrl = (url || "").split("?")[0];
+        const pMatch = cleanUrl.match(/(\d{3,4})p/i);
+        if (pMatch)
+          return this.getQualityFromHeight(pMatch[1]);
+        const standardMatch = cleanUrl.match(/[_-](\d{3,4})(\.m3u8|$)/);
+        if (standardMatch) {
+          const h = parseInt(standardMatch[1]);
+          const validQualities = [360, 480, 720, 1080, 1440, 2160];
+          if (validQualities.includes(h))
+            return h + "p";
         }
         return null;
       },
       detectRealQuality(_0) {
         return __async(this, arguments, function* (url, headers = {}) {
-          const urlQuality = this.getBestQuality("", url);
           try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 3e3);
@@ -554,10 +558,9 @@ var require_m3u8 = __commonJS({
             });
             clearTimeout(timeoutId);
             const content = yield response.text();
-            const contentQuality = this.getBestQuality(content, url);
-            return contentQuality || urlQuality;
+            return this.getBestQuality(content, url) || this.getBestQuality("", url);
           } catch (e) {
-            return urlQuality;
+            return this.getBestQuality("", url);
           }
         });
       }
