@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-21T20:01:49.484Z
+ * Generado: 2026-04-21T20:17:00.375Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -157,9 +157,10 @@ var require_vidhide = __commonJS({
           if (!link)
             return null;
           let finalUrl = link.startsWith("http") ? link : `${origin}${link}`;
+          const detectedQuality = hls4 ? "1080p" : hls2 ? "720p" : "HD";
           return {
             url: finalUrl,
-            quality: "1080p",
+            quality: detectedQuality,
             headers: { "Referer": `${origin}/` }
           };
         } catch (e) {
@@ -718,7 +719,7 @@ var require_extractor = __commonJS({
                         name: `${LANG_LABELS[langCode] || "Idioma"} - ${embed.servername.toUpperCase()}`,
                         title: "Embed69",
                         language: LANG_LABELS[langCode] || "Latino",
-                        quality: "1080p \u2705",
+                        quality: `${resolved.quality || "1080p"} \u2705`,
                         url: resolved.url
                       };
                     }
