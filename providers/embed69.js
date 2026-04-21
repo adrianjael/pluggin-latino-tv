@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-21T17:50:34.916Z
+ * Generado: 2026-04-21T17:56:05.713Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -686,35 +686,28 @@ var require_extractor = __commonJS({
             }
             const LANG_PRIORITY = ["LAT", "ESP", "SUB"];
             const LANG_LABELS = { "LAT": "Latino", "ESP": "Castellano", "SUB": "Subtitulado" };
+            const streams = [];
             for (const langCode of LANG_PRIORITY) {
               const langData = dataLinkJson.find((item) => item.video_language === langCode);
               if (!langData || !Array.isArray(langData.sortedEmbeds))
                 continue;
-              const streamPromises = langData.sortedEmbeds.map((embed) => __async(this, null, function* () {
+              for (const embed of langData.sortedEmbeds) {
                 if (!embed.link)
-                  return;
-                const payload = decodeJwtPayload(embed.link);
-                if (payload && payload.link) {
-                  const resolved = yield resolvers.resolve(embed.servername, payload.link);
-                  if (resolved && resolved.url) {
-                    const qInfo = getQualityInfo(resolved.url, resolved.quality);
-                    return {
+                  continue;
+                try {
+                  const payload = decodeJwtPayload(embed.link);
+                  if (payload && payload.link) {
+                    streams.push({
                       name: "Embed69",
-                      title: `${LANG_LABELS[langCode]} - ${embed.servername.toUpperCase()} \xB0 ${qInfo.display}`,
-                      url: resolved.url,
-                      quality: qInfo.display,
-                      headers: resolved.headers || {}
-                    };
+                      title: `${LANG_LABELS[langCode]} - ${embed.servername.toUpperCase()} \xB0 Auto`,
+                      url: payload.link
+                    });
                   }
+                } catch (e) {
                 }
-              }));
-              const results = (yield Promise.all(streamPromises)).filter((s) => s != null);
-              if (results.length > 0) {
-                console.log(`[Embed69] \u2713 ${results.length} streams en ${langCode}`);
-                return results;
               }
             }
-            return [];
+            return streams;
           } catch (error) {
             console.error(`[Embed69] Error extrayendo streams:`, error.message);
             return [];
