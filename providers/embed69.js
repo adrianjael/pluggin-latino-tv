@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-21T17:08:05.667Z
+ * Generado: 2026-04-21T17:15:49.451Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -559,24 +559,25 @@ var require_tmdb = __commonJS({
 var require_quality = __commonJS({
   "src/shared/utils/quality.js"(exports2, module2) {
     var qualityMarkers = [
-      { pattern: /2160|4k/i, label: "4K" },
-      { pattern: /1080/i, label: "1080p" },
-      { pattern: /720/i, label: "720p" },
-      { pattern: /480/i, label: "480p" },
-      { pattern: /360/i, label: "360p" }
+      { pattern: /[._\-/](2160|4k)(?![a-z0-9])/i, label: "4K" },
+      { pattern: /[._\-/]1080p?|[._\-/]1080[._\-/]/i, label: "1080p" },
+      { pattern: /[._\-/]720p?|[._\-/]720[._\-/]/i, label: "720p" },
+      { pattern: /[._\-/]480p?|[._\-/]480[._\-/]/i, label: "480p" },
+      { pattern: /[._\-/]360p?|[._\-/]360[._\-/]/i, label: "360p" }
     ];
     var masterPatterns = [/master/i, /playlist/i, /index\.m3u8/i, /multi/i];
     function getQualityInfo(url, hint) {
       const urlLower = String(url).toLowerCase();
+      const urlClean = urlLower.split("?")[0];
       let detectedLabel = null;
       for (const marker of qualityMarkers) {
-        if (marker.pattern.test(urlLower)) {
+        if (marker.pattern.test(urlClean)) {
           detectedLabel = marker.label;
           break;
         }
       }
-      const isDirectFile = urlLower.includes(".mp4") || urlLower.includes(".mkv");
-      const isMaster = !isDirectFile && (masterPatterns.some((p) => p.test(urlLower)) || hint && hint.toLowerCase() === "auto");
+      const isDirectFile = urlClean.includes(".mp4") || urlClean.includes(".mkv");
+      const isMaster = !isDirectFile && (masterPatterns.some((p) => p.test(urlClean)) || hint && hint.toLowerCase() === "auto");
       if (isMaster) {
         const maxQual = detectedLabel || (hint && hint !== "Auto" ? hint : null);
         if (maxQual) {
