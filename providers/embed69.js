@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-21T18:23:51.502Z
+ * Generado: 2026-04-21T18:27:40.325Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -687,31 +687,37 @@ var require_extractor = __commonJS({
                 sortedEmbeds: dataLinkJson[lang]
               }));
             }
-            const LANG_PRIORITY = ["LAT", "ESP", "SUB"];
-            const LANG_LABELS = { "LAT": "Latino", "ESP": "Castellano", "SUB": "Subtitulado" };
+            const LANG_PRIORITY = ["LAT"];
+            const LANG_LABELS = { "LAT": "Latino" };
             const streams = [];
             for (const langCode of LANG_PRIORITY) {
               const langData = dataLinkJson.find((item) => item.video_language === langCode);
               if (!langData || !Array.isArray(langData.sortedEmbeds))
                 continue;
-              for (const embed of langData.sortedEmbeds) {
+              const streamPromises = langData.sortedEmbeds.map((embed) => __async(this, null, function* () {
                 if (!embed.link)
-                  continue;
+                  return null;
                 try {
                   const payload = decodeJwtPayload(embed.link);
                   if (payload && payload.link) {
-                    streams.push({
-                      name: `${LANG_LABELS[langCode] || "Idioma"} - ${embed.servername.toUpperCase()}`,
-                      title: "Embed69",
-                      // Fallback para compatibilidad
-                      language: LANG_LABELS[langCode] || "Latino",
-                      quality: "1080p \u2705",
-                      url: payload.link
-                    });
+                    const resolved = yield resolvers.resolve(embed.servername, payload.link);
+                    if (resolved && resolved.url) {
+                      return {
+                        name: `${LANG_LABELS[langCode] || "Idioma"} - ${embed.servername.toUpperCase()}`,
+                        title: "Embed69",
+                        language: LANG_LABELS[langCode] || "Latino",
+                        quality: "1080p \u2705",
+                        url: resolved.url
+                      };
+                    }
                   }
                 } catch (e) {
+                  return null;
                 }
-              }
+                return null;
+              }));
+              const results = (yield Promise.all(streamPromises)).filter((s) => s !== null);
+              streams.push(...results);
             }
             return streams;
           } catch (error) {

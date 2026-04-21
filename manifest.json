@@ -1,12 +1,12 @@
 {
     "name": "AdrianJael - Latino",
-    "version": "1.3.17",
+    "version": "1.3.18",
     "scrapers": [
         {
             "id": "embed69",
             "name": "Embed69",
-            "description": "Latino Fast-Search - v1.3.17 (KMP-Compat)",
-            "version": "1.3.17",
+            "description": "Latino Fast-Search - v1.3.18 (Latino-Only)",
+            "version": "1.3.18",
             "author": "AdrianJael",
             "supportedTypes": [
                 "movie",
