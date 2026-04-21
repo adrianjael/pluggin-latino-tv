@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-21T17:28:23.487Z
+ * Generado: 2026-04-21T17:31:46.455Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -506,14 +506,21 @@ var require_resolvers = __commonJS({
       voe: resolveVoe
     };
     function withTimeout(promise, ms, servername) {
-      let timeout = new Promise((resolve2) => {
-        let id = setTimeout(() => {
-          clearTimeout(id);
+      let timeoutId;
+      const timeoutPromise = new Promise((resolve2) => {
+        timeoutId = setTimeout(() => {
           console.log(`[Resolvers] \u23F0 Timeout alcanzado para ${servername} (${ms}ms)`);
           resolve2(null);
         }, ms);
       });
-      return Promise.race([promise, timeout]);
+      return Promise.race([
+        promise.then((res) => {
+          if (timeoutId)
+            clearTimeout(timeoutId);
+          return res;
+        }),
+        timeoutPromise
+      ]);
     }
     function resolve(servername, url) {
       return __async(this, null, function* () {
@@ -559,13 +566,13 @@ var require_tmdb = __commonJS({
 var require_quality = __commonJS({
   "src/shared/utils/quality.js"(exports2, module2) {
     var qualityMarkers = [
-      // Patrones con 'p' o delimitadores (muy seguros, se buscan en toda la URL)
-      { pattern: /2160p|4kp|(?![a-z0-9])[._\-/](2160|4k)(?![a-z0-9])[._\-/]/i, label: "4K" },
-      { pattern: /1080p|(?![a-z0-9])[._\-/]1080(?![a-z0-9])[._\-/]/i, label: "1080p" },
-      { pattern: /720p|(?![a-z0-9])[._\-/]720(?![a-z0-9])[._\-/]/i, label: "720p" },
-      { pattern: /480p|(?![a-z0-9])[._\-/]480(?![a-z0-9])[._\-/]/i, label: "480p" },
-      { pattern: /360p|(?![a-z0-9])[._\-/]360(?![a-z0-9])[._\-/]/i, label: "360p" },
-      // Mapeo específico para Streamwish/Filelions (letras en el path: _,l,n,h,.urlset)
+      // Patrones con 'p' o delimitadores (simplificado para QuickJS)
+      { pattern: /2160p|4kp|[._\-/]2160[._\-/]|[._\-/]4k[._\-/]/i, label: "4K" },
+      { pattern: /1080p|[._\-/]1080[._\-/]/i, label: "1080p" },
+      { pattern: /720p|[._\-/]720[._\-/]/i, label: "720p" },
+      { pattern: /480p|[._\-/]480[._\-/]/i, label: "480p" },
+      { pattern: /360p|[._\-/]360[._\-/]/i, label: "360p" },
+      // Mapeo específico para Streamwish/Filelions
       { pattern: /[_,]h[,.]/i, label: "1080p" },
       { pattern: /[_,]n[,.]/i, label: "720p" },
       { pattern: /[_,]l[,.]/i, label: "480p" }
