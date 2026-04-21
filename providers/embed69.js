@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-21T21:11:46.877Z
+ * Generado: 2026-04-21T21:13:09.318Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -512,43 +512,55 @@ var require_m3u8 = __commonJS({
           return "360p";
         return null;
       },
-      /**
-       * Extrae la calidad analizando las líneas del archivo
-       */
       getQualityFromContent(content) {
         if (!content)
           return null;
-        const lines = content.split("\n");
-        let bestHeight = 0;
-        for (const line of lines) {
-          if (line.includes("RESOLUTION=")) {
-            const match = line.match(/RESOLUTION=\d+x(\d+)/i);
-            if (match) {
-              const height = parseInt(match[1]);
-              if (height > bestHeight)
-                bestHeight = height;
+        try {
+          const lines = content.split("\n");
+          let bestHeight = 0;
+          for (const line of lines) {
+            if (line.includes("RESOLUTION=")) {
+              const match = line.match(/RESOLUTION=\d+x(\d+)/i);
+              if (match) {
+                const height = parseInt(match[1]);
+                if (height > bestHeight)
+                  bestHeight = height;
+              }
             }
           }
+          return bestHeight > 0 ? this.getQualityFromHeight(bestHeight) : null;
+        } catch (e) {
+          return null;
         }
-        return bestHeight > 0 ? this.getQualityFromHeight(bestHeight) : null;
       },
       detectRealQuality(_0) {
         return __async(this, arguments, function* (url, headers = {}) {
+          const commonHeaders = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "*/*"
+          };
           try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5e3);
+            const timeoutId = setTimeout(() => controller.abort(), 4e3);
             const response = yield fetch(url, {
-              headers: __spreadValues({
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                "Accept": "*/*"
-              }, headers),
+              headers: __spreadValues(__spreadValues({}, commonHeaders), headers),
               signal: controller.signal
-            });
-            clearTimeout(timeoutId);
-            if (!response.ok)
-              return null;
-            const content = yield response.text();
-            return this.getQualityFromContent(content);
+            }).catch(() => null);
+            if (response && response.ok) {
+              clearTimeout(timeoutId);
+              const content = yield response.text();
+              return this.getQualityFromContent(content);
+            }
+            const response2 = yield fetch(url, {
+              headers: __spreadValues({}, commonHeaders),
+              signal: controller.signal
+            }).catch(() => null);
+            if (response2 && response2.ok) {
+              clearTimeout(timeoutId);
+              const content = yield response2.text();
+              return this.getQualityFromContent(content);
+            }
+            return null;
           } catch (e) {
             return null;
           }
