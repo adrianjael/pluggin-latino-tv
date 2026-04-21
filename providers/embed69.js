@@ -1,8 +1,10 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-21T18:37:04.584Z
+ * Generado: 2026-04-21T20:01:49.484Z
  */
 var __defProp = Object.defineProperty;
+var __defProps = Object.defineProperties;
+var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getOwnPropSymbols = Object.getOwnPropertySymbols;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
@@ -19,6 +21,7 @@ var __spreadValues = (a, b) => {
     }
   return a;
 };
+var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
 var __commonJS = (cb, mod) => function __require() {
   return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
 };
@@ -505,11 +508,42 @@ var require_resolvers = __commonJS({
       filemoon: resolveFilemoon,
       voe: resolveVoe
     };
+    function verifyLink(_0) {
+      return __async(this, arguments, function* (url, headers = {}) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 2e3);
+          const response = yield fetch(url, {
+            method: "GET",
+            headers: __spreadProps(__spreadValues({}, headers), {
+              "Range": "bytes=0-100",
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            }),
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+          if (response.status >= 400) {
+            console.log(`[Verify] \u{1F480} Enlace ca\xEDdo (${response.status}): ${url.substring(0, 50)}...`);
+            return false;
+          }
+          return true;
+        } catch (e) {
+          console.log(`[Verify] \u274C Error verificando: ${e.message}`);
+          return false;
+        }
+      });
+    }
     function resolve(servername, url) {
       return __async(this, null, function* () {
         const name = String(servername).toLowerCase().trim();
         if (registry[name]) {
-          return yield registry[name](url);
+          const result = yield registry[name](url);
+          if (result && result.url) {
+            const isAlive = yield verifyLink(result.url, result.headers || {});
+            if (!isAlive)
+              return null;
+          }
+          return result;
         }
         return null;
       });
