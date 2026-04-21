@@ -1,12 +1,12 @@
 {
     "name": "AdrianJael - Latino",
-    "version": "1.3.25",
+    "version": "1.3.26",
     "scrapers": [
         {
             "id": "embed69",
             "name": "Embed69",
-            "description": "Latino - calidad real verificada si tiene (✅=Real)",
-            "version": "1.3.25",
+            "description": "Búsqueda Rápida Latino - v1.3.26 (✅=Real / s.✅=Genérica)",
+            "version": "1.3.26",
             "author": "AdrianJael",
             "supportedTypes": [
                 "movie",

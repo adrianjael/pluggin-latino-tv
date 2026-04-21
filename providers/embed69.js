@@ -1,10 +1,8 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-21T20:38:55.653Z
+ * Generado: 2026-04-21T20:44:52.496Z
  */
 var __defProp = Object.defineProperty;
-var __defProps = Object.defineProperties;
-var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getOwnPropSymbols = Object.getOwnPropertySymbols;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
@@ -21,7 +19,6 @@ var __spreadValues = (a, b) => {
     }
   return a;
 };
-var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
 var __commonJS = (cb, mod) => function __require() {
   return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
 };
@@ -537,8 +534,8 @@ var require_m3u8 = __commonJS({
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 3e3);
             const response = yield fetch(url, {
-              headers: __spreadProps(__spreadValues({}, headers), { "Range": "bytes=0-2048" }),
-              // Solo el principio del archivo
+              headers: __spreadValues({}, headers),
+              // v1.3.26: Descarga completa para máxima compatibilidad
               signal: controller.signal
             });
             clearTimeout(timeoutId);
