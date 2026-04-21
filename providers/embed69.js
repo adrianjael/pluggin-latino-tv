@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-21T21:44:21.592Z
+ * Generado: 2026-04-21T21:52:28.797Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -512,9 +512,27 @@ var require_m3u8 = __commonJS({
           return "360p";
         return null;
       },
+      /**
+       * Busca patrones de calidad 100% seguros en la URL para evitar descargas innecesarias
+       */
+      getQualityFromSafePatterns(url) {
+        if (!url)
+          return null;
+        const u = url.toLowerCase();
+        if (u.includes(",h,.urlset"))
+          return "1080p";
+        if (u.includes(",n,.urlset"))
+          return "720p";
+        if (u.includes(",l,.urlset"))
+          return "480p";
+        const standardMatch = u.match(/[_-](1080|720|480|360)p?(\.m3u8|$|\?)/);
+        if (standardMatch)
+          return standardMatch[1] + "p";
+        return null;
+      },
       getQualityFromContent(content) {
         if (!content)
-          return { quality: null, error: "Empty" };
+          return null;
         try {
           const lines = content.split("\n");
           let bestHeight = 0;
@@ -528,29 +546,25 @@ var require_m3u8 = __commonJS({
               }
             }
           }
-          if (bestHeight > 0)
-            return { quality: this.getQualityFromHeight(bestHeight), error: null };
-          return { quality: null, error: "No-Res" };
+          return bestHeight > 0 ? this.getQualityFromHeight(bestHeight) : null;
         } catch (e) {
-          return { quality: null, error: "P-Err" };
+          return null;
         }
       },
-      /**
-       * En Nuvio, fetch es bloqueante y no soporta timeouts reales en JS.
-       * Dejamos que la App gestione la red de forma nativa.
-       */
       detectRealQuality(_0) {
         return __async(this, arguments, function* (url, headers = {}) {
           try {
+            const fastQuality = this.getQualityFromSafePatterns(url);
+            if (fastQuality)
+              return { quality: fastQuality, error: null };
             const response = yield fetch(url, { headers }).catch(() => null);
-            if (!response)
-              return { quality: null, error: "Net-Err" };
-            if (!response.ok)
-              return { quality: null, error: "H-" + response.status };
+            if (!response || !response.ok)
+              return null;
             const content = yield response.text();
-            return this.getQualityFromContent(content);
+            const realQuality = this.getQualityFromContent(content);
+            return realQuality ? { quality: realQuality, error: null } : null;
           } catch (e) {
-            return { quality: null, error: "Err" };
+            return null;
           }
         });
       }
