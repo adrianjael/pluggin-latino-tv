@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-21T17:15:49.451Z
+ * Generado: 2026-04-21T17:19:16.654Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -559,13 +559,18 @@ var require_tmdb = __commonJS({
 var require_quality = __commonJS({
   "src/shared/utils/quality.js"(exports2, module2) {
     var qualityMarkers = [
-      { pattern: /[._\-/](2160|4k)(?![a-z0-9])/i, label: "4K" },
-      { pattern: /[._\-/]1080p?|[._\-/]1080[._\-/]/i, label: "1080p" },
-      { pattern: /[._\-/]720p?|[._\-/]720[._\-/]/i, label: "720p" },
-      { pattern: /[._\-/]480p?|[._\-/]480[._\-/]/i, label: "480p" },
-      { pattern: /[._\-/]360p?|[._\-/]360[._\-/]/i, label: "360p" }
+      // Patrones con 'p' o delimitadores (muy seguros, se buscan en toda la URL)
+      { pattern: /2160p|4kp|(?![a-z0-9])[._\-/](2160|4k)(?![a-z0-9])[._\-/]/i, label: "4K" },
+      { pattern: /1080p|(?![a-z0-9])[._\-/]1080(?![a-z0-9])[._\-/]/i, label: "1080p" },
+      { pattern: /720p|(?![a-z0-9])[._\-/]720(?![a-z0-9])[._\-/]/i, label: "720p" },
+      { pattern: /480p|(?![a-z0-9])[._\-/]480(?![a-z0-9])[._\-/]/i, label: "480p" },
+      { pattern: /360p|(?![a-z0-9])[._\-/]360(?![a-z0-9])[._\-/]/i, label: "360p" },
+      // Mapeo específico para Streamwish/Filelions (letras en el path: _,l,n,h,.urlset)
+      { pattern: /[_,]h[,.]/i, label: "1080p" },
+      { pattern: /[_,]n[,.]/i, label: "720p" },
+      { pattern: /[_,]l[,.]/i, label: "480p" }
     ];
-    var masterPatterns = [/master/i, /playlist/i, /index\.m3u8/i, /multi/i];
+    var masterPatterns = [/master/i, /playlist/i, /index\.m3u8/i, /multi/i, /\.urlset/i];
     function getQualityInfo(url, hint) {
       const urlLower = String(url).toLowerCase();
       const urlClean = urlLower.split("?")[0];
