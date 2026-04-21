@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-21T17:57:14.914Z
+ * Generado: 2026-04-21T18:00:57.910Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -531,7 +531,7 @@ var require_resolvers = __commonJS({
       return __async(this, null, function* () {
         const name = String(servername).toLowerCase().trim();
         if (registry[name]) {
-          return yield withTimeout(registry[name](url), 8e3, name);
+          return yield withTimeout(registry[name](url), 4e3, name);
         }
         return null;
       });
@@ -691,21 +691,28 @@ var require_extractor = __commonJS({
               const langData = dataLinkJson.find((item) => item.video_language === langCode);
               if (!langData || !Array.isArray(langData.sortedEmbeds))
                 continue;
-              for (const embed of langData.sortedEmbeds) {
+              const streamPromises = langData.sortedEmbeds.map((embed) => __async(this, null, function* () {
                 if (!embed.link)
-                  continue;
+                  return null;
                 try {
                   const payload = decodeJwtPayload(embed.link);
                   if (payload && payload.link) {
-                    streams.push({
-                      name: "Embed69",
-                      title: `${LANG_LABELS[langCode]} - ${embed.servername.toUpperCase()} - Auto`,
-                      url: payload.link
-                    });
+                    const resolved = yield resolvers.resolve(embed.servername, payload.link);
+                    if (resolved && resolved.url) {
+                      return {
+                        name: "Embed69",
+                        title: `${LANG_LABELS[langCode] || "Idioma"} - ${embed.servername.toUpperCase()} - Auto`,
+                        url: resolved.url
+                      };
+                    }
                   }
                 } catch (e) {
+                  return null;
                 }
-              }
+                return null;
+              }));
+              const batch = yield Promise.all(streamPromises);
+              streams.push(...batch.filter((s) => s !== null));
             }
             return streams;
           } catch (error) {
