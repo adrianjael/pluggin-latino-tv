@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-21T21:02:16.508Z
+ * Generado: 2026-04-21T21:06:29.214Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -513,54 +513,44 @@ var require_m3u8 = __commonJS({
         return null;
       },
       /**
-       * Extrae la calidad del contenido del archivo o de la estructura de la URL
+       * Extrae la calidad analizando las líneas del archivo
        */
-      getBestQuality(content, url = "") {
-        if (content) {
-          const lines = content.split("\n");
-          let bestHeight = 0;
-          for (const line of lines) {
-            if (line.includes("RESOLUTION=")) {
-              const match = line.match(/RESOLUTION=\d+x(\d+)/i);
-              if (match) {
-                const height = parseInt(match[1]);
-                if (height > bestHeight)
-                  bestHeight = height;
-              }
+      getQualityFromContent(content) {
+        if (!content)
+          return null;
+        const lines = content.split("\n");
+        let bestHeight = 0;
+        for (const line of lines) {
+          if (line.includes("RESOLUTION=")) {
+            const match = line.match(/RESOLUTION=\d+x(\d+)/i);
+            if (match) {
+              const height = parseInt(match[1]);
+              if (height > bestHeight)
+                bestHeight = height;
             }
           }
-          if (bestHeight > 0)
-            return this.getQualityFromHeight(bestHeight);
         }
-        const cleanUrl = (url || "").split("?")[0];
-        const pMatch = cleanUrl.match(/(\d{3,4})p/i);
-        if (pMatch)
-          return this.getQualityFromHeight(pMatch[1]);
-        const standardMatch = cleanUrl.match(/[_-](\d{3,4})(\.m3u8|$)/);
-        if (standardMatch) {
-          const h = parseInt(standardMatch[1]);
-          const validQualities = [360, 480, 720, 1080, 1440, 2160];
-          if (validQualities.includes(h))
-            return h + "p";
-        }
-        return null;
+        return bestHeight > 0 ? this.getQualityFromHeight(bestHeight) : null;
       },
       detectRealQuality(_0) {
         return __async(this, arguments, function* (url, headers = {}) {
           try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 3e3);
+            const timeoutId = setTimeout(() => controller.abort(), 5e3);
             const response = yield fetch(url, {
               headers: __spreadValues({
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept": "*/*"
               }, headers),
               signal: controller.signal
             });
             clearTimeout(timeoutId);
+            if (!response.ok)
+              return null;
             const content = yield response.text();
-            return this.getBestQuality(content, url) || this.getBestQuality("", url);
+            return this.getQualityFromContent(content);
           } catch (e) {
-            return this.getBestQuality("", url);
+            return null;
           }
         });
       }
