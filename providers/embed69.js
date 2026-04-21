@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-21T17:31:46.455Z
+ * Generado: 2026-04-21T17:48:11.405Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -666,12 +666,19 @@ var require_extractor = __commonJS({
           try {
             const response = yield http.get(url);
             const html = typeof response === "object" ? JSON.stringify(response) : String(response);
-            const match = html.match(/let\s+dataLink\s*=\s*(\[.*?\]);/);
+            const match = html.match(/let\s+dataLink\s*=\s*([\[\{][\s\S]*?[\]\}]);/);
             if (!match) {
               console.log("[Embed69] No se encontr\xF3 'dataLink' en el HTML.");
               return [];
             }
-            const dataLinkJson = JSON.parse(match[1]);
+            let dataLinkJson = JSON.parse(match[1]);
+            if (!Array.isArray(dataLinkJson)) {
+              console.log("[Embed69] dataLink detectado como Objeto. Normalizando...");
+              dataLinkJson = Object.keys(dataLinkJson).map((lang) => ({
+                video_language: lang,
+                sortedEmbeds: dataLinkJson[lang]
+              }));
+            }
             const LANG_PRIORITY = ["LAT", "ESP", "SUB"];
             const LANG_LABELS = { "LAT": "Latino", "ESP": "Castellano", "SUB": "Subtitulado" };
             for (const langCode of LANG_PRIORITY) {
