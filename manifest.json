@@ -27,7 +27,7 @@
             "id": "detodo",
             "name": "DeTodoPeliculas",
             "description": "Latino - Servidores rápidos (Voe, VidHide, Streamwish)",
-            "version": "1.5.0",
+            "version": "1.5.1",
             "author": "AdrianJael",
             "supportedTypes": [
                 "movie",

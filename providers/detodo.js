@@ -1,6 +1,6 @@
 /**
  * detodo - Plugin Nuvio
- * Generado: 2026-04-21T22:29:05.185Z
+ * Generado: 2026-04-22T22:02:10.048Z
  */
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __commonJS = (cb, mod) => function __require() {
@@ -434,6 +434,44 @@ var require_filemoon = __commonJS({
   }
 });
 
+// src/shared/resolvers/gdtvid.js
+var require_gdtvid = __commonJS({
+  "src/shared/resolvers/gdtvid.js"(exports2, module2) {
+    function resolve(url) {
+      return __async(this, null, function* () {
+        try {
+          const idMatch = url.match(/#([a-z0-9]+)/) || url.match(/id=([a-z0-9]+)/);
+          const id = idMatch ? idMatch[1] : null;
+          if (!id)
+            return null;
+          const apiUrl = `https://gdtvid.p2pplay.pro/api/v1/video?id=${id}&r=https://detodopeliculas.net`;
+          const res = yield fetch(apiUrl, {
+            headers: {
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36",
+              "Referer": "https://gdtvid.p2pplay.pro/",
+              "Accept": "*/*"
+            }
+          });
+          if (!res.ok)
+            return null;
+          return {
+            url,
+            // Nuvio TV suele tener un webview que maneja estos reproductores
+            quality: "HD",
+            headers: {
+              "Referer": "https://detodopeliculas.net/",
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            }
+          };
+        } catch (e) {
+          return null;
+        }
+      });
+    }
+    module2.exports = resolve;
+  }
+});
+
 // src/shared/utils/m3u8.js
 var require_m3u8 = __commonJS({
   "src/shared/utils/m3u8.js"(exports2, module2) {
@@ -522,12 +560,15 @@ var require_resolvers = __commonJS({
     var resolveStreamwish = require_streamwish();
     var resolveVoe = require_voe();
     var resolveFilemoon = require_filemoon();
+    var resolveGdtvid = require_gdtvid();
     var m3u8Parser = require_m3u8();
     var registry = {
       vidhide: resolveVidhide,
       streamwish: resolveStreamwish,
       filemoon: resolveFilemoon,
-      voe: resolveVoe
+      voe: resolveVoe,
+      gdtvid: resolveGdtvid,
+      p2pplay: resolveGdtvid
     };
     function resolve(servername, url) {
       return __async(this, null, function* () {
@@ -557,51 +598,144 @@ var require_resolvers = __commonJS({
 // src/detodo/extractor.js
 var require_extractor = __commonJS({
   "src/detodo/extractor.js"(exports2, module2) {
-    var cheerio = require("cheerio");
+    var cheerio = typeof globalThis.cheerio !== "undefined" ? globalThis.cheerio : require("cheerio");
     var resolvers = require_resolvers();
-    var host = "https://detodopeliculas.nu";
+    var host = "https://detodopeliculas.net";
     function getStreams2(tmdbId, type, season, episode) {
       return __async(this, null, function* () {
+        console.log(`[DeTodo] Iniciando extracci\xF3n: ${type} ID:${tmdbId} S:${season} E:${episode}`);
         try {
-          const tmdbUrl = `https://api.themoviedb.org/3/${type}/${tmdbId}?api_key=439c478a771f35c05022f9feabcca01c&language=es-MX`;
+          const apiKey = globalThis.SCRAPER_SETTINGS && globalThis.SCRAPER_SETTINGS.tmdb_api_key || globalThis.TMDB_API_KEY || "439c478a771f35c05022f9feabcca01c";
+          const tmdbUrl = `https://api.themoviedb.org/3/${type}/${tmdbId}?api_key=${apiKey}&language=es-MX`;
           const tmdbRes = yield fetch(tmdbUrl).then((r) => r.json());
-          const title = tmdbRes.title || tmdbRes.name;
+          let title = tmdbRes.title || tmdbRes.name;
+          const year = (tmdbRes.release_date || tmdbRes.first_air_date || "").split("-")[0];
           if (!title)
-            return [];
-          const searchUrl = `${host}/?s=${encodeURIComponent(title)}`;
-          const searchRes = yield fetch(searchUrl);
-          const searchHtml = yield searchRes.text();
-          const $search = cheerio.load(searchHtml);
-          let movieUrl = null;
-          $search("article").each((i, el) => {
-            const link = $search(el).find("a").attr("href");
-            const itemTitle = $search(el).find(".title").text() || $search(el).find("img").attr("alt");
-            if (itemTitle && itemTitle.toLowerCase().includes(title.toLowerCase())) {
-              movieUrl = link;
-              return false;
+            throw new Error("No se pudo obtener el t\xEDtulo de TMDB");
+          console.log(`[DeTodo] T\xEDtulo TMDB: "${title}" (${year})`);
+          let queryTitle = title.split(":")[0].split("-")[0].trim();
+          const homeHtml = yield fetch(host, { headers: { "User-Agent": "Mozilla/5.0" } }).then((r) => r.text());
+          const nonceMatch = homeHtml.match(/"nonce":"([a-f0-9]+)","area"/);
+          const nonce = nonceMatch ? nonceMatch[1] : null;
+          function performSearch(q) {
+            return __async(this, null, function* () {
+              if (!nonce)
+                return [];
+              try {
+                const searchApiUrl = `${host}/wp-json/dooplay/search/?keyword=${encodeURIComponent(q)}&nonce=${nonce}`;
+                const searchRes = yield fetch(searchApiUrl, { headers: { "User-Agent": "Mozilla/5.0" } });
+                const searchData = yield searchRes.json();
+                const matches = [];
+                for (const id in searchData) {
+                  const item = searchData[id];
+                  const itemUrl = item.url || "";
+                  if (type === "tv" && !itemUrl.includes("/serie/"))
+                    continue;
+                  if (type === "movie" && itemUrl.includes("/serie/"))
+                    continue;
+                  matches.push({ url: itemUrl, id, title: item.title });
+                }
+                matches.sort((a, b) => parseInt(a.id) - parseInt(b.id));
+                return matches;
+              } catch (e) {
+                return [];
+              }
+            });
+          }
+          let candidates = [];
+          const originalTitle = tmdbRes.original_title || tmdbRes.original_name || "";
+          const slugs = [title, originalTitle, queryTitle].filter(Boolean).map(
+            (t) => t.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
+          );
+          const slugPrefix = type === "tv" ? "serie" : "pelicula";
+          for (const s of slugs) {
+            candidates.push({ url: `${host}/${slugPrefix}/${s}/`, id: null });
+          }
+          const queries = [tmdbId, title, originalTitle, queryTitle];
+          for (const q of queries) {
+            const results = yield performSearch(q);
+            for (const r of results) {
+              if (r.url && !candidates.some((c) => c.url === r.url))
+                candidates.push(r);
             }
-          });
-          if (!movieUrl)
-            return [];
-          const movieRes = yield fetch(movieUrl);
-          const movieHtml = yield movieRes.text();
-          const $movie = cheerio.load(movieHtml);
-          const streams = [];
-          const options = [];
-          $movie('li[id^="player-option-"]').each((i, el) => {
-            const $el = $movie(el);
-            const langImg = $el.find("img").attr("src") || "";
-            const langText = $el.text().toLowerCase();
-            if (langImg.includes("lat.png") || langText.includes("latino")) {
-              options.push({
-                post: $el.attr("data-post"),
-                nume: $el.attr("data-nume"),
-                type: $el.attr("data-type"),
-                serverName: $el.find(".title").text() || "Servidor"
+          }
+          if (candidates.length === 0) {
+            console.log(`[DeTodo] Intentando B\xFAsqueda Profunda...`);
+            const webHtml = yield fetch(`${host}/?s=${encodeURIComponent(queryTitle)}`, { headers: { "User-Agent": "Mozilla/5.0" } }).then((r) => r.text());
+            const $web = cheerio.load(webHtml);
+            $web(".result-item article, .item article").each((i, el) => {
+              const $el = $web(el);
+              const itemUrl = $el.find("a").first().attr("href");
+              const itemTitle = $el.find(".title a").text() || $el.find("img").attr("alt");
+              if (itemUrl)
+                candidates.push({ url: itemUrl, title: itemTitle, id: null });
+            });
+          }
+          let finalPageHtml = null;
+          let finalPageUrl = null;
+          let finalOptions = [];
+          let finalPostId = null;
+          for (const cand of candidates.slice(0, 5)) {
+            console.log(`[DeTodo] Validando: ${cand.url}`);
+            try {
+              const html = yield fetch(cand.url, { headers: { "User-Agent": "Mozilla/5.0" } }).then((r) => r.text());
+              const $ = cheerio.load(html);
+              const pageId = $('input[name="postid"]').val() || cand.id;
+              let targetUrl = cand.url;
+              let targetHtml = html;
+              let $target = $;
+              if (type === "tv" && targetUrl.includes("/serie/")) {
+                const seasonUrl = targetUrl.replace(/\/$/, "") + `/?ep_season=${season}`;
+                const sHtml = yield fetch(seasonUrl, { headers: { "User-Agent": "Mozilla/5.0" } }).then((r) => r.text());
+                const $s = cheerio.load(sHtml);
+                let epUrl = null;
+                $s(".episodios li, .episodio-item, .se-c, a").each((i, el) => {
+                  const epText = $s(el).text().trim().toLowerCase();
+                  const href = $s(el).attr("href") || $s(el).find("a").attr("href");
+                  if (href && href.includes("/episodio/")) {
+                    const match = epText.match(/(\d+)\s*[x-]\s*(\d+)/);
+                    if (match && parseInt(match[1]) == season && parseInt(match[2]) == episode) {
+                      epUrl = href;
+                      return false;
+                    }
+                  }
+                });
+                if (epUrl) {
+                  targetUrl = epUrl;
+                  targetHtml = yield fetch(epUrl, { headers: { "User-Agent": "Mozilla/5.0" } }).then((r) => r.text());
+                  $target = cheerio.load(targetHtml);
+                  console.log(`[DeTodo] Episodio encontrado: ${epUrl}`);
+                }
+              }
+              const opts = [];
+              $target("li.dooplay_player_option, #playeroptionsul li").each((i, el) => {
+                const $el = $target(el);
+                const flagImg = ($el.find(".flag img").attr("data-lazy-src") || $el.find(".flag img").attr("src") || "").toLowerCase();
+                const isLat = flagImg.includes("lat") || $el.text().toLowerCase().includes("latino");
+                if (isLat) {
+                  opts.push({
+                    post: $el.attr("data-post") || $target('input[name="postid"]').val() || pageId,
+                    nume: $el.attr("data-nume"),
+                    type: $el.attr("data-type") || (type === "tv" ? "tvshow" : "movie"),
+                    serverName: $el.find("span.title").text().trim() || `Opcion ${$el.attr("data-nume")}`
+                  });
+                }
               });
+              if (opts.length > 0) {
+                finalPageHtml = targetHtml;
+                finalPageUrl = targetUrl;
+                finalOptions = opts;
+                finalPostId = $target('input[name="postid"]').val() || pageId;
+                break;
+              }
+            } catch (e) {
+              console.log(`[DeTodo] Error en candidato: ${e.message}`);
             }
-          });
-          for (const opt of options) {
+          }
+          if (finalOptions.length === 0)
+            return [];
+          const streams = [];
+          for (const opt of finalOptions) {
             try {
               const formData = new URLSearchParams();
               formData.append("action", "doo_player_ajax");
@@ -613,30 +747,52 @@ var require_extractor = __commonJS({
                 body: formData.toString(),
                 headers: {
                   "Content-Type": "application/x-www-form-urlencoded",
-                  "X-Requested-With": "XMLHttpRequest"
+                  "X-Requested-With": "XMLHttpRequest",
+                  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36",
+                  "Referer": finalPageUrl
                 }
               });
-              const ajaxData = yield ajaxRes.json();
-              const embedUrl = ajaxData.embed_url;
+              const ajaxJson = yield ajaxRes.json();
+              let embedUrl = ajaxJson.embed_url || "";
+              if (embedUrl.includes("<iframe")) {
+                const m = embedUrl.match(/src="([^"]+)"/);
+                if (m)
+                  embedUrl = m[1];
+              }
+              embedUrl = embedUrl.replace(/\\/g, "");
+              if (embedUrl.startsWith("//"))
+                embedUrl = "https:" + embedUrl;
               if (embedUrl) {
-                const resolved = yield resolvers.resolve(opt.serverName, embedUrl);
-                if (resolved && resolved.url) {
+                console.log(`[DeTodo] Servidor detectado: ${opt.serverName} -> URL: ${embedUrl}`);
+                let srv = opt.serverName.toLowerCase();
+                if (embedUrl.includes("voe.sx"))
+                  srv = "voe";
+                else if (embedUrl.includes("vidhide"))
+                  srv = "vidhide";
+                else if (embedUrl.includes("filemoon"))
+                  srv = "filemoon";
+                else if (embedUrl.includes("gdtvid") || embedUrl.includes("p2pplay"))
+                  srv = "gdtvid";
+                console.log(`[DeTodo] Intentando resolver con: ${srv}`);
+                const res = yield resolvers.resolve(srv, embedUrl);
+                if (res && res.url) {
+                  console.log(`[DeTodo] \xA1\xC9xito! ${opt.serverName} resuelto.`);
                   streams.push({
                     name: `DeTodo - ${opt.serverName.toUpperCase()}`,
-                    title: "DeTodoPeliculas",
-                    url: resolved.url,
-                    quality: resolved.verified ? `${resolved.quality} \u2705` : resolved.quality || "HD",
-                    language: "Latino"
+                    url: res.url,
+                    quality: res.verified ? `${res.quality} \u2705` : res.quality,
+                    language: "Latino",
+                    headers: res.headers || {}
                   });
                 }
               }
             } catch (e) {
-              console.error(`[DeTodo] Error en opci\xF3n ${opt.nume}:`, e.message);
+              console.log(`[DeTodo] Error AJAX: ${e.message}`);
             }
           }
           return streams;
         } catch (e) {
-          console.error("[DeTodo] Error general:", e.message);
+          console.log(`[DeTodo] Error Global: ${e.message}`);
           return [];
         }
       });
