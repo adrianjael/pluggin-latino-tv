@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T17:09:04.478Z
+ * Generado: 2026-04-27T17:19:38.411Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -173,20 +173,29 @@ var require_extractor = __commonJS({
                 continue;
               let finalUrl = sData.u;
               let resultHeaders = { "User-Agent": UA, "Referer": playerUrl };
-              const isDirectServer = finalUrl.includes("masukestin.com") || finalUrl.includes("minochinos.com") || finalUrl.includes("vidhide.com");
-              if (isDirectServer) {
-                const embedRes = yield fetch(finalUrl, { headers: { "User-Agent": UA, "Referer": host } });
-                if (embedRes.ok) {
-                  const embedHtml = yield embedRes.text();
-                  const packedMatch = embedHtml.match(/eval\(function\(p,a,c,k,e,[rd]\)[\s\S]*?\.split\('\|'\)[^\)]*\)\)/);
-                  if (packedMatch) {
-                    const unpacked = unpackVidHide(packedMatch[0]);
-                    const hlsMatch = unpacked ? unpacked.match(/"hls[24]"\s*:\s*"([^"]+)"/) : null;
-                    if (hlsMatch) {
-                      finalUrl = hlsMatch[1];
-                      finalUrl += (finalUrl.includes("?") ? "&" : "?") + "referer=sololatino.net";
-                      resultHeaders.Referer = new URL(sData.u).origin + "/";
+              const isDirectServer = finalUrl.includes("masukestin.com") || finalUrl.includes("minochinos.com") || finalUrl.includes("vidhide.com") || finalUrl.includes("cloudwindow-route.com");
+              const isAlreadyDirect = finalUrl.includes(".m3u8") || finalUrl.includes(".mp4");
+              if (isDirectServer || isAlreadyDirect) {
+                if (!isAlreadyDirect) {
+                  const embedRes = yield fetch(finalUrl, { headers: { "User-Agent": UA, "Referer": host } });
+                  if (embedRes.ok) {
+                    const embedHtml = yield embedRes.text();
+                    const packedMatch = embedHtml.match(/eval\(function\(p,a,c,k,e,[rd]\)[\s\S]*?\.split\('\|'\)[^\)]*\)\)/);
+                    if (packedMatch) {
+                      const unpacked = unpackVidHide(packedMatch[0]);
+                      const hlsMatch = unpacked ? unpacked.match(/"hls[24]"\s*:\s*"([^"]+)"/) : null;
+                      if (hlsMatch) {
+                        finalUrl = hlsMatch[1];
+                        finalUrl += (finalUrl.includes("?") ? "&" : "?") + "referer=sololatino.net";
+                        resultHeaders.Referer = new URL(sData.u).origin + "/";
+                      }
                     }
+                  }
+                } else {
+                  finalUrl += (finalUrl.includes("?") ? "&" : "?") + "referer=sololatino.net";
+                  try {
+                    resultHeaders.Referer = new URL(finalUrl).origin + "/";
+                  } catch (e) {
                   }
                 }
               } else if (sData.sig) {
