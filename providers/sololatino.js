@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T15:55:54.201Z
+ * Generado: 2026-04-27T16:07:50.342Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -698,8 +698,10 @@ var require_extractor = __commonJS({
               const isDirectM3u8 = srvData.u.includes(".m3u8");
               if (isInternal) {
                 finalUrl = `${host}${embedUrl}`;
-              } else if (srvData.sig && !isDirectM3u8) {
+              } else if (srvData.sig) {
                 finalUrl = `${host}/p.php?url=${encodeURIComponent(srvData.u)}&sig=${srvData.sig}`;
+              } else if (isDirectM3u8) {
+                finalUrl = srvData.u;
               }
               const formatServer = (name) => {
                 if (!name)
@@ -710,7 +712,12 @@ var require_extractor = __commonJS({
                 name: `SoloLatino - ${formatServer(srv[0])}`,
                 url: finalUrl,
                 quality: "1080p \u2705",
-                language: "Latino"
+                language: "Latino",
+                headers: {
+                  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+                  "Referer": playerUrl,
+                  "Origin": host
+                }
               });
             } catch (e) {
             }

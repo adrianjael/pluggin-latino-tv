@@ -1,6 +1,6 @@
 {
     "name": "Latino - AdrianJael",
-    "version": "2.3.7",
+    "version": "2.3.9",
     "scrapers": [
         {
             "id": "embed69",
@@ -27,7 +27,7 @@
             "id": "sololatino",
             "name": "SoloLatino",
             "description": "Latino - Exclusivo (Voe, Filemoon, OkRu)",
-            "version": "1.0.9",
+            "version": "1.1.1",
             "author": "AdrianJael",
             "supportedTypes": [
                 "movie",
