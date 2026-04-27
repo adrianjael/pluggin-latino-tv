@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T14:59:55.793Z
+ * Generado: 2026-04-27T15:04:00.702Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -703,8 +703,13 @@ var require_extractor = __commonJS({
                   realSrv = "Filemoon";
                 else if (fullUrl.includes("cloudwindow"))
                   realSrv = "VOE";
+                const formatServer = (name) => {
+                  if (!name)
+                    return "Unknown";
+                  return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+                };
                 streams.push({
-                  name: `SoloLatino - ${realSrv.toUpperCase()}`,
+                  name: `SoloLatino - ${formatServer(realSrv)}`,
                   url: fullUrl,
                   quality: "1080p \u2705",
                   language: "Latino",
@@ -713,8 +718,13 @@ var require_extractor = __commonJS({
               } else {
                 const res = yield resolvers.resolve(srv[0], embedUrl);
                 if (res && res.url) {
+                  const formatServer = (name) => {
+                    if (!name)
+                      return "Unknown";
+                    return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+                  };
                   streams.push({
-                    name: `SoloLatino - ${srv[0].toUpperCase()}`,
+                    name: `SoloLatino - ${formatServer(srv[0])}`,
                     url: res.url,
                     quality: `${res.quality || "1080p"} \u2705`,
                     language: "Latino",
