@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T21:32:17.293Z
+ * Generado: 2026-04-27T21:37:37.441Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -159,6 +159,9 @@ var require_extractor = __commonJS({
                 const apiData = yield apiRes.json();
                 if (apiData.success && apiData.data && apiData.data.length > 0) {
                   videoUrl = apiData.data[apiData.data.length - 1].file;
+                  if (!videoUrl.startsWith("http")) {
+                    videoUrl = host + videoUrl;
+                  }
                   streams.push({
                     name: `SoloLatino - Mediafire`,
                     url: videoUrl,
@@ -168,6 +171,9 @@ var require_extractor = __commonJS({
                   });
                 }
               } else {
+                if (!videoUrl.startsWith("http")) {
+                  videoUrl = host + videoUrl;
+                }
                 streams.push({
                   name: `SoloLatino - Mediafire`,
                   url: videoUrl,
