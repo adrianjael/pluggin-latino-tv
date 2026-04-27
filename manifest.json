@@ -1,6 +1,6 @@
 {
     "name": "Nuvio Latino TV",
-    "version": "2.0.0",
+    "version": "2.1.0",
     "scrapers": [
         {
             "id": "embed69",
@@ -24,22 +24,22 @@
             ]
         },
         {
-            "id": "detodo",
-            "name": "DeTodoPeliculas",
-            "description": "Latino - Servidores rápidos (Voe, VidHide, Streamwish)",
-            "version": "1.5.1",
+            "id": "sololatino",
+            "name": "SoloLatino",
+            "description": "Latino - Exclusivo (Voe, Filemoon, OkRu)",
+            "version": "1.0.0",
             "author": "AdrianJael",
             "supportedTypes": [
                 "movie",
                 "tv"
             ],
-            "filename": "providers/detodo.js",
+            "filename": "providers/sololatino.js",
             "enabled": true,
             "formats": [
                 "mp4",
                 "m3u8"
             ],
-            "logo": "https://detodopeliculas.net/wp-content/uploads/2023/01/header-removebg-preview.png",
+            "logo": "https://sololatino.net/favicon.ico",
             "contentLanguage": [
                 "es"
             ]
