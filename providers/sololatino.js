@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T17:57:07.047Z
+ * Generado: 2026-04-27T18:01:58.519Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -89,7 +89,7 @@ var require_extractor = __commonJS({
       return __async(this, null, function* () {
         var _a;
         try {
-          console.log(`[SoloLatino] Sync v2.6.1: ${mediaType} ID:${tmdbId}`);
+          console.log(`[SoloLatino] Transparent v2.6.2: ${mediaType} ID:${tmdbId}`);
           let imdbId = tmdbId;
           if (!String(tmdbId).startsWith("tt")) {
             imdbId = yield tmdb.getImdbId(tmdbId, mediaType);
@@ -138,13 +138,22 @@ var require_extractor = __commonJS({
               if (!sData || !sData.u)
                 continue;
               let videoUrl = sData.u;
-              let finalHeaders = { "User-Agent": UA, "Referer": host + "/" };
               if (sData.sig) {
-                videoUrl = `${host}/p.php?url=${encodeURIComponent(videoUrl)}&sig=${sData.sig}`;
-                if (cookie)
-                  finalHeaders["Cookie"] = cookie;
-              } else if (videoUrl.startsWith("/")) {
-                videoUrl = host + videoUrl;
+                const proxyUrl = `${host}/p.php?url=${encodeURIComponent(videoUrl)}&sig=${sData.sig}`;
+                const proxyRes = yield fetch(proxyUrl, {
+                  method: "GET",
+                  headers: __spreadProps(__spreadValues({}, headers), { "Cookie": cookie }),
+                  redirect: "manual"
+                });
+                const location = proxyRes.headers.get("location");
+                if (location)
+                  videoUrl = location;
+                else
+                  videoUrl = proxyUrl;
+              }
+              const bypassReferer = "embed69.org";
+              if (videoUrl.includes("cloudwindow-route.com") || videoUrl.includes("cloud-route.com")) {
+                videoUrl += (videoUrl.includes("?") ? "&" : "?") + `referer=${bypassReferer}`;
               }
               if (!videoUrl.includes(".m3u8") && !videoUrl.includes(".mp4"))
                 videoUrl += "#.mp4";
@@ -152,8 +161,7 @@ var require_extractor = __commonJS({
                 name: `SoloLatino - ${srv[0].replace(/🎬|🚀|✅/gu, "").trim()}`,
                 url: videoUrl,
                 quality: "1080p \u2705",
-                language: "Latino",
-                headers: finalHeaders
+                language: "Latino"
               });
             } catch (e) {
             }
