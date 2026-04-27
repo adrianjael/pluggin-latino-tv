@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T15:38:03.996Z
+ * Generado: 2026-04-27T15:42:31.611Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -694,8 +694,27 @@ var require_extractor = __commonJS({
               }
               const isProxy = embedUrl.includes("p.php?url=");
               const isInternal = embedUrl.startsWith("/p.php?v=");
-              const res = yield resolvers.resolve(srv[0], srvData.u);
-              if (res && res.url) {
+              let finalStream = null;
+              const isDirectM3u8 = srvData.u.includes(".m3u8");
+              if (isDirectM3u8) {
+                console.log(`[SoloLatino] Enlace directo detectado para ${srv[0]}`);
+                const origin = new URL(srvData.u).origin;
+                finalStream = {
+                  url: srvData.u,
+                  quality: "1080p \u2705",
+                  headers: { "Referer": `${origin}/` }
+                };
+              } else {
+                const res = yield resolvers.resolve(srv[0], srvData.u);
+                if (res && res.url) {
+                  finalStream = {
+                    url: res.url,
+                    quality: `${res.quality || "1080p"} \u2705`,
+                    headers: res.headers
+                  };
+                }
+              }
+              if (finalStream) {
                 const formatServer = (name) => {
                   if (!name)
                     return "Unknown";
@@ -703,11 +722,10 @@ var require_extractor = __commonJS({
                 };
                 streams.push({
                   name: `SoloLatino - ${formatServer(srv[0])}`,
-                  url: res.url,
-                  quality: `${res.quality || "1080p"} \u2705`,
+                  url: finalStream.url,
+                  quality: finalStream.quality,
                   language: "Latino",
-                  headers: res.headers
-                  // Usar las cabeceras que el resolver considere necesarias
+                  headers: finalStream.headers
                 });
               }
             } catch (e) {
