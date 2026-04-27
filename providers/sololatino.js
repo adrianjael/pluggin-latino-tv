@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T17:02:13.045Z
+ * Generado: 2026-04-27T17:04:48.676Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -116,7 +116,7 @@ var require_extractor = __commonJS({
       return __async(this, null, function* () {
         var _a;
         try {
-          console.log(`[SoloLatino] B\xFAsqueda v2.4.8 (Direct Mode): ${mediaType} ID:${tmdbId}`);
+          console.log(`[SoloLatino] B\xFAsqueda v2.4.9: ${mediaType} ID:${tmdbId}`);
           let imdbId = tmdbId;
           if (!String(tmdbId).startsWith("tt")) {
             imdbId = yield tmdb.getImdbId(tmdbId, mediaType);
@@ -192,15 +192,11 @@ var require_extractor = __commonJS({
               }
               if (!finalUrl.includes(".m3u8") && !finalUrl.includes(".mp4"))
                 finalUrl += "#.mp4";
-              const formatServer = (name) => {
-                let clean = name.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2700}-\u{27BF}]|[\u{E000}-\u{F8FF}]|\u{D83C}[\u{DC00}-\u{DFFF}]|\u{D83D}[\u{DC00}-\u{DFFF}]|[\u{2011}-\u{26FF}]|\u{D83E}[\u{DC00}-\u{DFFF}]/gu, "").trim();
-                return clean.includes("Player+") ? "Mediafire Directo" : clean;
-              };
               streams.push({
-                name: `SoloLatino - ${formatServer(srv[0])}`,
+                serverName: srv[0],
                 url: finalUrl,
-                quality: "1080p \u2705",
-                language: "Latino",
+                quality: "1080p",
+                langLabel: "Latino",
                 headers: resultHeaders
               });
             } catch (e) {
