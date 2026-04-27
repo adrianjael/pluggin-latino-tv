@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T15:04:00.702Z
+ * Generado: 2026-04-27T15:10:11.563Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -713,7 +713,7 @@ var require_extractor = __commonJS({
                   url: fullUrl,
                   quality: "1080p \u2705",
                   language: "Latino",
-                  headers: { "Referer": host + "/", "User-Agent": UA }
+                  headers: { "Referer": playerUrl, "User-Agent": UA }
                 });
               } else {
                 const res = yield resolvers.resolve(srv[0], embedUrl);
@@ -728,7 +728,7 @@ var require_extractor = __commonJS({
                     url: res.url,
                     quality: `${res.quality || "1080p"} \u2705`,
                     language: "Latino",
-                    headers: res.headers || { "Referer": host + "/" }
+                    headers: res.headers || { "Referer": playerUrl }
                   });
                 }
               }
