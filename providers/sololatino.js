@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T16:30:08.293Z
+ * Generado: 2026-04-27T16:37:50.802Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -172,7 +172,8 @@ var require_extractor = __commonJS({
                 language: "Latino",
                 headers: {
                   "User-Agent": UA,
-                  "Referer": host + "/",
+                  "Referer": `${host}/`,
+                  // Usar el host del reproductor como Referer
                   "Origin": host
                 }
               });
