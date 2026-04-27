@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T18:01:58.519Z
+ * Generado: 2026-04-27T18:09:19.602Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -89,7 +89,7 @@ var require_extractor = __commonJS({
       return __async(this, null, function* () {
         var _a;
         try {
-          console.log(`[SoloLatino] Transparent v2.6.2: ${mediaType} ID:${tmdbId}`);
+          console.log(`[SoloLatino] Disguise v2.6.3: ${mediaType} ID:${tmdbId}`);
           let imdbId = tmdbId;
           if (!String(tmdbId).startsWith("tt")) {
             imdbId = yield tmdb.getImdbId(tmdbId, mediaType);
@@ -151,17 +151,19 @@ var require_extractor = __commonJS({
                 else
                   videoUrl = proxyUrl;
               }
-              const bypassReferer = "embed69.org";
               if (videoUrl.includes("cloudwindow-route.com") || videoUrl.includes("cloud-route.com")) {
-                videoUrl += (videoUrl.includes("?") ? "&" : "?") + `referer=${bypassReferer}`;
+                videoUrl += (videoUrl.includes("?") ? "&" : "?") + "referer=https://www.google.com/";
               }
-              if (!videoUrl.includes(".m3u8") && !videoUrl.includes(".mp4"))
-                videoUrl += "#.mp4";
+              if (!videoUrl.toLowerCase().includes(".m3u8")) {
+                videoUrl += videoUrl.includes("?") ? "&format=.m3u8" : "?.m3u8";
+              }
+              videoUrl += "#.m3u8";
               streams.push({
                 name: `SoloLatino - ${srv[0].replace(/🎬|🚀|✅/gu, "").trim()}`,
                 url: videoUrl,
                 quality: "1080p \u2705",
                 language: "Latino"
+                // No enviamos headers para evitar que Nuvio Mobile ensucie la petición
               });
             } catch (e) {
             }
