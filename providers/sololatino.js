@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T17:49:55.029Z
+ * Generado: 2026-04-27T17:52:01.712Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -85,38 +85,11 @@ var require_extractor = __commonJS({
     var host = "https://player.pelisserieshoy.com";
     var refererBase = "https://sololatino.net/";
     var UA = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Mobile Safari/537.36";
-    function unpackVidHide(script) {
-      try {
-        const match = script.match(/eval\(function\(p,a,c,k,e,[rd]\)\{.*?\}\s*\('([\s\S]*?)',\s*(\d+),\s*(\d+),\s*'([\s\S]*?)'\.split\('\|'\)/);
-        if (!match)
-          return null;
-        let [full, p, a, c, k] = match;
-        a = parseInt(a);
-        c = parseInt(c);
-        k = k.split("|");
-        const chars = "0123456789abcdefghijklmnopqrstuvwxyz";
-        const decode = (l, s) => {
-          let res = "";
-          while (l > 0) {
-            res = chars[l % s] + res;
-            l = Math.floor(l / s);
-          }
-          return res || "0";
-        };
-        const unpacked = p.replace(/\b\w+\b/g, (l) => {
-          const s = parseInt(l, 36);
-          return s < k.length && k[s] ? k[s] : decode(s, a);
-        });
-        return unpacked;
-      } catch (e) {
-        return null;
-      }
-    }
     function getStreams2(tmdbId, mediaType, season, episode) {
       return __async(this, null, function* () {
         var _a;
         try {
-          console.log(`[SoloLatino] B\xFAsqueda v2.5.9: ${mediaType} ID:${tmdbId}`);
+          console.log(`[SoloLatino] Resolviendo v2.6.0: ${mediaType} ID:${tmdbId}`);
           let imdbId = tmdbId;
           if (!String(tmdbId).startsWith("tt")) {
             imdbId = yield tmdb.getImdbId(tmdbId, mediaType);
@@ -169,45 +142,36 @@ var require_extractor = __commonJS({
               const sData = yield sResponse.json();
               if (!sData || !sData.u)
                 continue;
-              let finalUrl = sData.u;
-              const isVIP = finalUrl.includes("cloudwindow-route.com") || finalUrl.includes("cloud-route.com") || finalUrl.includes("masukestin.com") || finalUrl.includes("minochinos.com") || finalUrl.includes("vidhide.com");
-              if (isVIP) {
-                if (!finalUrl.includes(".m3u8")) {
-                  const embedRes = yield fetch(finalUrl, { headers: { "User-Agent": UA, "Referer": host } });
-                  if (embedRes.ok) {
-                    const embedHtml = yield embedRes.text();
-                    const packedMatch = embedHtml.match(/eval\(function\(p,a,c,k,e,[rd]\)[\s\S]*?\.split\('\|'\)[^\)]*\)\)/);
-                    if (packedMatch) {
-                      const unpacked = unpackVidHide(packedMatch[0]);
-                      const hlsMatch = unpacked ? unpacked.match(/"hls[24]"\s*:\s*"([^"]+)"/) : null;
-                      if (hlsMatch)
-                        finalUrl = hlsMatch[1];
-                    }
-                  }
+              let videoUrl = sData.u;
+              if (sData.sig) {
+                const proxyUrl = `${host}/p.php?url=${encodeURIComponent(videoUrl)}&sig=${sData.sig}`;
+                const proxyRes = yield fetch(proxyUrl, {
+                  method: "GET",
+                  headers: __spreadProps(__spreadValues({}, stealthHeaders), { "Cookie": cookie }),
+                  redirect: "manual"
+                });
+                const location = proxyRes.headers.get("location");
+                if (location) {
+                  videoUrl = location;
+                } else {
+                  videoUrl = proxyUrl;
                 }
-                finalUrl += (finalUrl.includes("?") ? "&" : "?") + "referer=embed69.org";
-              } else if (sData.sig) {
-                finalUrl = `${host}/p.php?url=${encodeURIComponent(finalUrl)}&sig=${sData.sig}`;
-              } else if (finalUrl.startsWith("/")) {
-                finalUrl = host + finalUrl;
+              } else if (videoUrl.startsWith("/")) {
+                videoUrl = host + videoUrl;
               }
-              if (!finalUrl.includes(".m3u8") && !finalUrl.includes(".mp4"))
-                finalUrl += "#.mp4";
-              const resultHeaders = {
-                "User-Agent": UA,
-                "Referer": host + "/",
-                // Referer oficial de PelisSeriesHoy
-                "Origin": host,
-                "Cookie": cookie,
-                "sec-ch-ua-platform": '"Android"',
-                "Range": "bytes=0-"
-              };
+              if (!videoUrl.includes(".m3u8") && !videoUrl.includes(".mp4"))
+                videoUrl += "#.mp4";
               streams.push({
                 name: `SoloLatino - ${srv[0].replace(/🎬|🚀|✅/gu, "").trim()}`,
-                url: finalUrl,
+                url: videoUrl,
                 quality: "1080p \u2705",
                 language: "Latino",
-                headers: resultHeaders
+                headers: {
+                  "User-Agent": UA,
+                  "Referer": host + "/",
+                  "Cookie": cookie,
+                  "sec-ch-ua-platform": '"Android"'
+                }
               });
             } catch (e) {
             }
