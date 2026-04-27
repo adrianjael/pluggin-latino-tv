@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T16:55:11.940Z
+ * Generado: 2026-04-27T17:02:13.045Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -84,10 +84,39 @@ var require_extractor = __commonJS({
     var tmdb = require_tmdb();
     var host = "https://player.pelisserieshoy.com";
     var refererBase = "https://sololatino.net/";
+    var UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36";
+    function unpackVidHide(script) {
+      try {
+        const match = script.match(/eval\(function\(p,a,c,k,e,[rd]\)\{.*?\}\s*\('([\s\S]*?)',\s*(\d+),\s*(\d+),\s*'([\s\S]*?)'\.split\('\|'\)/);
+        if (!match)
+          return null;
+        let [full, p, a, c, k] = match;
+        a = parseInt(a);
+        c = parseInt(c);
+        k = k.split("|");
+        const chars = "0123456789abcdefghijklmnopqrstuvwxyz";
+        const decode = (l, s) => {
+          let res = "";
+          while (l > 0) {
+            res = chars[l % s] + res;
+            l = Math.floor(l / s);
+          }
+          return res || "0";
+        };
+        const unpacked = p.replace(/\b\w+\b/g, (l) => {
+          const s = parseInt(l, 36);
+          return s < k.length && k[s] ? k[s] : decode(s, a);
+        });
+        return unpacked;
+      } catch (e) {
+        return null;
+      }
+    }
     function getStreams2(tmdbId, mediaType, season, episode) {
       return __async(this, null, function* () {
+        var _a;
         try {
-          console.log(`[SoloLatino] B\xFAsqueda v2.4.5 (Legacy Mode): ${mediaType} ID:${tmdbId}`);
+          console.log(`[SoloLatino] B\xFAsqueda v2.4.8 (Direct Mode): ${mediaType} ID:${tmdbId}`);
           let imdbId = tmdbId;
           if (!String(tmdbId).startsWith("tt")) {
             imdbId = yield tmdb.getImdbId(tmdbId, mediaType);
@@ -98,29 +127,18 @@ var require_extractor = __commonJS({
           const ep = String(episode || 1).padStart(2, "0");
           const slug = isMovie ? imdbId : `${imdbId}-${season || 1}x${ep}`;
           const playerUrl = `${host}/f/${slug}`;
-          const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36";
           const stealthHeaders = {
             "User-Agent": UA,
             "Referer": refererBase,
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-            "Accept-Language": "es-MX,es;q=0.9,en;q=0.8",
-            "sec-ch-ua": '"Chromium";v="137", "Not-A.Brand";v="24", "Google Chrome";v="137"',
-            "sec-ch-ua-mobile": "?0",
-            "sec-ch-ua-platform": '"Windows"',
-            "Sec-Fetch-Dest": "document",
-            "Sec-Fetch-Mode": "navigate",
-            "Sec-Fetch-Site": "none",
-            "Upgrade-Insecure-Requests": "1"
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Accept-Language": "es-MX,es;q=0.9,en;q=0.8"
           };
           const response = yield fetch(playerUrl, { headers: stealthHeaders });
           if (!response.ok)
             return [];
           const html = yield response.text();
-          let cookie = "";
           const setCookieHeader = response.headers.get("set-cookie");
-          if (setCookieHeader) {
-            cookie = setCookieHeader.split(",").map((c) => c.split(";")[0].trim()).join("; ");
-          }
+          const cookie = setCookieHeader ? setCookieHeader.split(",").map((c) => c.split(";")[0].trim()).join("; ") : "";
           const tokenMatch = html.match(/(?:let\s+token|const\s+_t|tok|_t|token)\s*.*['"]([a-f0-9]{32})['"]/i);
           const token = tokenMatch ? tokenMatch[1] : "";
           if (!token)
@@ -129,29 +147,17 @@ var require_extractor = __commonJS({
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
             "User-Agent": UA,
             "Referer": playerUrl,
-            "X-Requested-With": "XMLHttpRequest",
-            "sec-ch-ua": stealthHeaders["sec-ch-ua"],
-            "sec-ch-ua-platform": '"Windows"'
+            "X-Requested-With": "XMLHttpRequest"
           };
           if (cookie)
             commonHeaders["Cookie"] = cookie;
-          const streams = [];
-          yield fetch(`${host}/s.php`, {
-            method: "POST",
-            headers: commonHeaders,
-            body: `a=click&tok=${token}`
-          }).catch(() => {
+          yield fetch(`${host}/s.php`, { method: "POST", headers: commonHeaders, body: `a=click&tok=${token}` }).catch(() => {
           });
           yield new Promise((r) => setTimeout(r, 1200));
-          const listRes = yield fetch(`${host}/s.php`, {
-            method: "POST",
-            headers: commonHeaders,
-            body: `a=1&tok=${token}`
-          });
+          const listRes = yield fetch(`${host}/s.php`, { method: "POST", headers: commonHeaders, body: `a=1&tok=${token}` });
           const listData = yield listRes.json();
-          if (!listData || !listData.langs_s)
-            return [];
-          const latServers = listData.langs_s.LAT || listData.s || [];
+          const latServers = ((_a = listData.langs_s) == null ? void 0 : _a.LAT) || listData.s || [];
+          const streams = [];
           for (const srv of latServers) {
             try {
               const sResponse = yield fetch(`${host}/s.php`, {
@@ -163,42 +169,45 @@ var require_extractor = __commonJS({
               if (!sData || !sData.u)
                 continue;
               let finalUrl = sData.u;
-              if (sData.sig) {
-                finalUrl = `${host}/p.php?url=${encodeURIComponent(sData.u)}&sig=${sData.sig}`;
+              let resultHeaders = { "User-Agent": UA, "Referer": playerUrl, "Origin": host };
+              const isDirectServer = finalUrl.includes("masukestin.com") || finalUrl.includes("minochinos.com") || finalUrl.includes("vidhide.com");
+              if (isDirectServer) {
+                const embedRes = yield fetch(finalUrl, { headers: { "User-Agent": UA, "Referer": host } });
+                if (embedRes.ok) {
+                  const embedHtml = yield embedRes.text();
+                  const packedMatch = embedHtml.match(/eval\(function\(p,a,c,k,e,[rd]\)[\s\S]*?\.split\('\|'\)[^\)]*\)\)/);
+                  if (packedMatch) {
+                    const unpacked = unpackVidHide(packedMatch[0]);
+                    const hlsMatch = unpacked ? unpacked.match(/"hls[24]"\s*:\s*"([^"]+)"/) : null;
+                    if (hlsMatch) {
+                      finalUrl = hlsMatch[1];
+                      resultHeaders.Referer = new URL(sData.u).origin + "/";
+                    }
+                  }
+                }
+              } else if (sData.sig) {
+                finalUrl = `${host}/p.php?url=${encodeURIComponent(finalUrl)}&sig=${sData.sig}`;
               } else if (finalUrl.startsWith("/")) {
                 finalUrl = host + finalUrl;
               }
-              if (!finalUrl.includes(".m3u8") && !finalUrl.includes(".mp4")) {
+              if (!finalUrl.includes(".m3u8") && !finalUrl.includes(".mp4"))
                 finalUrl += "#.mp4";
-              }
               const formatServer = (name) => {
-                if (!name)
-                  return "Unknown";
-                let cleanName = name.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2700}-\u{27BF}]|[\u{E000}-\u{F8FF}]|\u{D83C}[\u{DC00}-\u{DFFF}]|\u{D83D}[\u{DC00}-\u{DFFF}]|[\u{2011}-\u{26FF}]|\u{D83E}[\u{DC00}-\u{DFFF}]/gu, "").trim();
-                if (cleanName.includes("Player+"))
-                  return "Mediafire Directo \u{1F680}";
-                return cleanName;
+                let clean = name.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2700}-\u{27BF}]|[\u{E000}-\u{F8FF}]|\u{D83C}[\u{DC00}-\u{DFFF}]|\u{D83D}[\u{DC00}-\u{DFFF}]|[\u{2011}-\u{26FF}]|\u{D83E}[\u{DC00}-\u{DFFF}]/gu, "").trim();
+                return clean.includes("Player+") ? "Mediafire Directo" : clean;
               };
               streams.push({
                 name: `SoloLatino - ${formatServer(srv[0])}`,
                 url: finalUrl,
                 quality: "1080p \u2705",
                 language: "Latino",
-                headers: {
-                  "User-Agent": UA,
-                  "Referer": playerUrl,
-                  // Referer específico de la película
-                  "Origin": host,
-                  "Accept": "*/*",
-                  "Cookie": cookie
-                }
+                headers: resultHeaders
               });
             } catch (e) {
             }
           }
           return streams;
         } catch (error) {
-          console.error("[SoloLatino] Error:", error);
           return [];
         }
       });
