@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T16:37:50.802Z
+ * Generado: 2026-04-27T16:38:44.559Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -173,8 +173,10 @@ var require_extractor = __commonJS({
                 headers: {
                   "User-Agent": UA,
                   "Referer": `${host}/`,
-                  // Usar el host del reproductor como Referer
-                  "Origin": host
+                  "Origin": host,
+                  "Accept": "*/*",
+                  "Cookie": cookie
+                  // Inyectar la cookie de sesión capturada
                 }
               });
             } catch (e) {
