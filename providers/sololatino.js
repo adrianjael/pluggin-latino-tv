@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T21:28:58.045Z
+ * Generado: 2026-04-27T21:32:17.293Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -89,7 +89,7 @@ var require_extractor = __commonJS({
       return __async(this, null, function* () {
         var _a;
         try {
-          console.log(`[SoloLatino] QueryHack v2.7.8: ${mediaType} ID:${tmdbId}`);
+          console.log(`[SoloLatino] OnlyMediafire v2.7.9: ${mediaType} ID:${tmdbId}`);
           let imdbId = tmdbId;
           if (!String(tmdbId).startsWith("tt")) {
             imdbId = yield tmdb.getImdbId(tmdbId, mediaType);
@@ -129,6 +129,10 @@ var require_extractor = __commonJS({
           const streams = [];
           for (const srv of latServers) {
             try {
+              const serverName = srv[0].toLowerCase();
+              if (!serverName.includes("mediafire") && !serverName.includes("mf")) {
+                continue;
+              }
               const sResponse = yield fetch(`${host}/s.php`, {
                 method: "POST",
                 headers: __spreadProps(__spreadValues({}, commonHeaders), { "Origin": host }),
@@ -156,28 +160,17 @@ var require_extractor = __commonJS({
                 if (apiData.success && apiData.data && apiData.data.length > 0) {
                   videoUrl = apiData.data[apiData.data.length - 1].file;
                   streams.push({
-                    name: `SoloLatino - ${srv[0].replace(/🎬|🚀|✅/gu, "").trim()}`,
+                    name: `SoloLatino - Mediafire`,
                     url: videoUrl,
                     quality: "1080p \u2705",
                     language: "Latino",
                     headers: masterHeaders
                   });
                 }
-              } else if (sData.sig) {
-                let proxyUrl = videoUrl;
-                if (!videoUrl.startsWith("http")) {
-                  proxyUrl = `${host}${videoUrl}`;
-                } else if (videoUrl.includes("minochinos") || videoUrl.includes("cloudwindow")) {
-                  proxyUrl = `${host}/p.php?url=${encodeURIComponent(videoUrl)}&sig=${sData.sig}`;
-                  if (sData.src)
-                    proxyUrl += `&src=${sData.src}`;
-                }
-                if (!proxyUrl.includes(".m3u8")) {
-                  proxyUrl += (proxyUrl.includes("?") ? "&" : "?") + "hack=.m3u8";
-                }
+              } else {
                 streams.push({
-                  name: `SoloLatino - ${srv[0].replace(/🎬|🚀|✅/gu, "").trim()}`,
-                  url: proxyUrl,
+                  name: `SoloLatino - Mediafire`,
+                  url: videoUrl,
                   quality: "1080p \u2705",
                   language: "Latino",
                   headers: masterHeaders
