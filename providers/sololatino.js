@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T15:34:41.535Z
+ * Generado: 2026-04-27T15:38:03.996Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -694,47 +694,21 @@ var require_extractor = __commonJS({
               }
               const isProxy = embedUrl.includes("p.php?url=");
               const isInternal = embedUrl.startsWith("/p.php?v=");
-              if (isProxy || isInternal) {
-                let realUrl = "";
-                if (isProxy) {
-                  const urlParams = new URLSearchParams(embedUrl.split("?")[1]);
-                  realUrl = urlParams.get("url") || embedUrl;
-                } else {
-                  realUrl = `${host}${embedUrl}`;
-                }
-                let realSrv = srv[0];
-                if (realUrl.includes("minochinos") || realUrl.includes("masukestin"))
-                  realSrv = "VidHide";
-                else if (realUrl.includes("r66nv9ed"))
-                  realSrv = "Filemoon";
-                else if (realUrl.includes("cloudwindow"))
-                  realSrv = "VOE";
+              const res = yield resolvers.resolve(srv[0], srvData.u);
+              if (res && res.url) {
                 const formatServer = (name) => {
                   if (!name)
                     return "Unknown";
                   return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
                 };
                 streams.push({
-                  name: `SoloLatino - ${formatServer(realSrv)}`,
-                  url: realUrl,
-                  quality: "1080p \u2705",
-                  language: "Latino"
+                  name: `SoloLatino - ${formatServer(srv[0])}`,
+                  url: res.url,
+                  quality: `${res.quality || "1080p"} \u2705`,
+                  language: "Latino",
+                  headers: res.headers
+                  // Usar las cabeceras que el resolver considere necesarias
                 });
-              } else {
-                const res = yield resolvers.resolve(srv[0], embedUrl);
-                if (res && res.url) {
-                  const formatServer = (name) => {
-                    if (!name)
-                      return "Unknown";
-                    return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
-                  };
-                  streams.push({
-                    name: `SoloLatino - ${formatServer(srv[0])}`,
-                    url: res.url,
-                    quality: `${res.quality || "1080p"} \u2705`,
-                    language: "Latino"
-                  });
-                }
               }
             } catch (e) {
             }
