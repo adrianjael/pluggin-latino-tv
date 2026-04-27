@@ -1,6 +1,6 @@
 {
     "name": "Nuvio Latino TV",
-    "version": "2.3.2",
+    "version": "2.3.4",
     "scrapers": [
         {
             "id": "embed69",
@@ -27,7 +27,7 @@
             "id": "sololatino",
             "name": "SoloLatino",
             "description": "Latino - Exclusivo (Voe, Filemoon, OkRu)",
-            "version": "1.0.5",
+            "version": "1.0.6",
             "author": "AdrianJael",
             "supportedTypes": [
                 "movie",
