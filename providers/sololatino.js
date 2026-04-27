@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T17:45:05.278Z
+ * Generado: 2026-04-27T17:47:01.560Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -83,6 +83,7 @@ var require_extractor = __commonJS({
   "src/sololatino/extractor.js"(exports2, module2) {
     var tmdb = require_tmdb();
     var host = "https://player.pelisserieshoy.com";
+    var refererBase = "https://sololatino.net/";
     var UA = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Mobile Safari/537.36";
     function unpackVidHide(script) {
       try {
@@ -115,7 +116,7 @@ var require_extractor = __commonJS({
       return __async(this, null, function* () {
         var _a;
         try {
-          console.log(`[SoloLatino] B\xFAsqueda v2.5.7: ${mediaType} ID:${tmdbId}`);
+          console.log(`[SoloLatino] B\xFAsqueda v2.5.8: ${mediaType} ID:${tmdbId}`);
           let imdbId = tmdbId;
           if (!String(tmdbId).startsWith("tt")) {
             imdbId = yield tmdb.getImdbId(tmdbId, mediaType);
@@ -126,20 +127,13 @@ var require_extractor = __commonJS({
           const ep = String(episode || 1).padStart(2, "0");
           const slug = isMovie ? imdbId : `${imdbId}-${season || 1}x${ep}`;
           const playerUrl = `${host}/f/${slug}`;
-          const navigationHeaders = {
+          const stealthHeaders = {
             "User-Agent": UA,
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-            "Accept-Language": "es-ES,es;q=0.9",
-            "sec-ch-ua": '"Google Chrome";v="147", "Not.A/Brand";v="8", "Chromium";v="147"',
-            "sec-ch-ua-mobile": "?1",
+            "Referer": refererBase,
             "sec-ch-ua-platform": '"Android"',
-            "sec-fetch-dest": "document",
-            "sec-fetch-mode": "navigate",
-            "sec-fetch-site": "none",
-            "sec-fetch-user": "?1",
-            "upgrade-insecure-requests": "1"
+            "sec-ch-ua": '"Google Chrome";v="147", "Not.A/Brand";v="8", "Chromium";v="147"'
           };
-          const response = yield fetch(playerUrl, { headers: navigationHeaders });
+          const response = yield fetch(playerUrl, { headers: stealthHeaders });
           if (!response.ok)
             return [];
           const html = yield response.text();
@@ -152,10 +146,9 @@ var require_extractor = __commonJS({
           const token = tokenMatch ? tokenMatch[1] : "";
           if (!token)
             return [];
-          const commonHeaders = __spreadProps(__spreadValues({}, navigationHeaders), {
+          const commonHeaders = __spreadProps(__spreadValues({}, stealthHeaders), {
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
             "Referer": playerUrl,
-            "sec-fetch-site": "same-origin",
             "X-Requested-With": "XMLHttpRequest"
           });
           if (cookie)
@@ -177,9 +170,17 @@ var require_extractor = __commonJS({
               if (!sData || !sData.u)
                 continue;
               let finalUrl = sData.u;
+              const isCloudwindow = finalUrl.includes("cloudwindow-route.com") || finalUrl.includes("cloud-route.com");
               const isVidHide = finalUrl.includes("masukestin.com") || finalUrl.includes("minochinos.com") || finalUrl.includes("vidhide.com");
-              if (isVidHide && !finalUrl.includes(".m3u8")) {
-                const embedRes = yield fetch(finalUrl, { headers: { "User-Agent": UA, "Referer": host } });
+              if (isCloudwindow || isVidHide) {
+                let embedUrl = finalUrl;
+                if (finalUrl.includes("/engine/")) {
+                  const parts = finalUrl.split("/");
+                  const id = parts[parts.length - 2];
+                  const domain = new URL(finalUrl).hostname;
+                  embedUrl = `https://${domain}/v/${id}`;
+                }
+                const embedRes = yield fetch(embedUrl, { headers: { "User-Agent": UA, "Referer": host } });
                 if (embedRes.ok) {
                   const embedHtml = yield embedRes.text();
                   const packedMatch = embedHtml.match(/eval\(function\(p,a,c,k,e,[rd]\)[\s\S]*?\.split\('\|'\)[^\)]*\)\)/);
@@ -199,12 +200,14 @@ var require_extractor = __commonJS({
               }
               if (!finalUrl.includes(".m3u8") && !finalUrl.includes(".mp4"))
                 finalUrl += "#.mp4";
-              const resultHeaders = __spreadProps(__spreadValues({}, navigationHeaders), {
-                "Referer": finalUrl,
-                "Origin": host,
+              const resultHeaders = {
+                "User-Agent": UA,
+                "Referer": "https://embed69.org/",
+                // Referer neutro que aceptan la mayoría de CDNs
+                "Origin": "https://embed69.org",
                 "Cookie": cookie,
-                "Range": "bytes=0-"
-              });
+                "sec-ch-ua-platform": '"Android"'
+              };
               streams.push({
                 name: `SoloLatino - ${srv[0].replace(/🎬|🚀|✅/gu, "").trim()}`,
                 url: finalUrl,
