@@ -1,6 +1,6 @@
 {
     "name": "Latino - AdrianJael",
-    "version": "2.8.2",
+    "version": "2.8.3",
     "scrapers": [
         {
             "id": "embed69",
@@ -40,6 +40,27 @@
                 "m3u8"
             ],
             "logo": "https://sololatino.net/favicon.ico",
+            "contentLanguage": [
+                "es"
+            ]
+        },
+        {
+            "id": "cinehdplus",
+            "name": "CineHDPlus",
+            "description": "Películas y Series Latino (Voe, Mixdrop)",
+            "version": "1.0.0",
+            "author": "AdrianJael",
+            "supportedTypes": [
+                "movie",
+                "tv"
+            ],
+            "filename": "providers/cinehdplus.js",
+            "enabled": true,
+            "formats": [
+                "mp4",
+                "m3u8"
+            ],
+            "logo": "https://cinehdplus.org/wp-content/uploads/2021/11/favicon.png",
             "contentLanguage": [
                 "es"
             ]

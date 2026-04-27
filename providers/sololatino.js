@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T21:50:19.271Z
+ * Generado: 2026-04-27T22:40:17.655Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -62,9 +62,7 @@ var require_tmdb = __commonJS({
           const url = `https://api.themoviedb.org/3/${type}/${tmdbId}/external_ids?api_key=${apiKey}`;
           console.log(`[TMDB] Consultando (${type}): ${tmdbId} usando API Key: ${apiKey.substring(0, 4)}...`);
           const response = yield fetch(url, {
-            headers: {
-              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-            }
+            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" }
           });
           const data = yield response.json();
           return data.imdb_id || null;
@@ -74,7 +72,26 @@ var require_tmdb = __commonJS({
         }
       });
     }
-    module2.exports = { getImdbId };
+    function getDetails(tmdbId, mediaType) {
+      return __async(this, null, function* () {
+        try {
+          const type = String(mediaType || "").toLowerCase().includes("movie") ? "movie" : "tv";
+          const apiKey = getTmdbApiKey();
+          const url = `https://api.themoviedb.org/3/${type}/${tmdbId}?api_key=${apiKey}&language=es-MX`;
+          console.log(`[TMDB] Detalles (${type}): ${tmdbId}`);
+          const response = yield fetch(url, {
+            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" }
+          });
+          if (!response.ok)
+            return null;
+          return yield response.json();
+        } catch (e) {
+          console.error("[TMDB] Error obteniendo detalles:", e.message);
+          return null;
+        }
+      });
+    }
+    module2.exports = { getImdbId, getDetails };
   }
 });
 
