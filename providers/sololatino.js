@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T16:07:50.342Z
+ * Generado: 2026-04-27T16:19:41.926Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -675,33 +675,28 @@ var require_extractor = __commonJS({
           if (rawServers.length === 0)
             return [];
           const streams = [];
-          const topServers = rawServers.slice(0, 3);
-          for (const srv of topServers) {
+          for (const srv of servers) {
             try {
-              if (typeof process !== "undefined")
-                yield new Promise((r) => setTimeout(r, 1200));
-              const srvRes = yield fetch(`${host}/s.php`, {
+              const sResponse = yield fetch(`${host}/s.php`, {
                 method: "POST",
-                body: `a=2&v=${srv[1]}&tok=${token}`,
-                headers: postHeaders
+                headers: {
+                  "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36",
+                  "Referer": playerUrl,
+                  "X-Requested-With": "XMLHttpRequest"
+                },
+                body: `a=2&v=${srv[1]}&tok=${tok}`
               });
-              const srvData = yield srvRes.json();
-              if (!srvData || !srvData.u)
+              const sData = yield sResponse.json();
+              let videoUrl = sData.u;
+              if (!videoUrl)
                 continue;
-              let embedUrl = srvData.u;
-              if (srvData.sig) {
-                embedUrl = `${host}/p.php?url=${encodeURIComponent(srvData.u)}&sig=${srvData.sig}`;
+              if (videoUrl.startsWith("/")) {
+                videoUrl = host + videoUrl;
               }
-              const isProxy = embedUrl.includes("p.php?url=");
-              const isInternal = embedUrl.startsWith("/p.php?v=");
-              let finalUrl = srvData.u;
-              const isDirectM3u8 = srvData.u.includes(".m3u8");
-              if (isInternal) {
-                finalUrl = `${host}${embedUrl}`;
-              } else if (srvData.sig) {
-                finalUrl = `${host}/p.php?url=${encodeURIComponent(srvData.u)}&sig=${srvData.sig}`;
-              } else if (isDirectM3u8) {
-                finalUrl = srvData.u;
+              let finalVideoUrl = videoUrl;
+              if (!finalVideoUrl.includes(".m3u8") && !finalVideoUrl.includes(".mp4")) {
+                finalVideoUrl += "#.mp4";
               }
               const formatServer = (name) => {
                 if (!name)
@@ -710,12 +705,12 @@ var require_extractor = __commonJS({
               };
               streams.push({
                 name: `SoloLatino - ${formatServer(srv[0])}`,
-                url: finalUrl,
+                url: finalVideoUrl,
                 quality: "1080p \u2705",
                 language: "Latino",
                 headers: {
-                  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
-                  "Referer": playerUrl,
+                  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36",
+                  "Referer": host + "/",
                   "Origin": host
                 }
               });
