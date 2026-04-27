@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T21:37:37.441Z
+ * Generado: 2026-04-27T21:50:19.271Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -89,7 +89,7 @@ var require_extractor = __commonJS({
       return __async(this, null, function* () {
         var _a;
         try {
-          console.log(`[SoloLatino] OnlyMediafire v2.7.9: ${mediaType} ID:${tmdbId}`);
+          console.log(`[SoloLatino] MediafireResolver v2.8.2: ${mediaType} ID:${tmdbId}`);
           let imdbId = tmdbId;
           if (!String(tmdbId).startsWith("tt")) {
             imdbId = yield tmdb.getImdbId(tmdbId, mediaType);
@@ -129,10 +129,6 @@ var require_extractor = __commonJS({
           const streams = [];
           for (const srv of latServers) {
             try {
-              const serverName = srv[0].toLowerCase();
-              if (!serverName.includes("mediafire") && !serverName.includes("mf")) {
-                continue;
-              }
               const sResponse = yield fetch(`${host}/s.php`, {
                 method: "POST",
                 headers: __spreadProps(__spreadValues({}, commonHeaders), { "Origin": host }),
@@ -159,28 +155,28 @@ var require_extractor = __commonJS({
                 const apiData = yield apiRes.json();
                 if (apiData.success && apiData.data && apiData.data.length > 0) {
                   videoUrl = apiData.data[apiData.data.length - 1].file;
-                  if (!videoUrl.startsWith("http")) {
-                    videoUrl = host + videoUrl;
-                  }
+                }
+              }
+              if (!videoUrl.startsWith("http")) {
+                videoUrl = host + videoUrl;
+              }
+              try {
+                const finalRes = yield fetch(videoUrl, { method: "HEAD", headers: masterHeaders, redirect: "follow" });
+                if (finalRes.url && finalRes.url.includes("mediafire.com")) {
                   streams.push({
-                    name: `SoloLatino - Mediafire`,
-                    url: videoUrl,
+                    name: `SoloLatino - Directo`,
+                    url: finalRes.url,
                     quality: "1080p \u2705",
                     language: "Latino",
-                    headers: masterHeaders
+                    // Ya no necesitamos origin, Mediafire va directo. Solo el Referer que vimos en tu cURL.
+                    headers: {
+                      "User-Agent": NUVIO_UA,
+                      "Referer": "https://player.pelisserieshoy.com/"
+                    }
                   });
+                  continue;
                 }
-              } else {
-                if (!videoUrl.startsWith("http")) {
-                  videoUrl = host + videoUrl;
-                }
-                streams.push({
-                  name: `SoloLatino - Mediafire`,
-                  url: videoUrl,
-                  quality: "1080p \u2705",
-                  language: "Latino",
-                  headers: masterHeaders
-                });
+              } catch (e) {
               }
             } catch (e) {
             }
