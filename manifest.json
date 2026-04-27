@@ -1,6 +1,6 @@
 {
     "name": "Latino - AdrianJael",
-    "version": "2.8.3",
+    "version": "2.8.4",
     "scrapers": [
         {
             "id": "embed69",
@@ -48,7 +48,7 @@
             "id": "cinehdplus",
             "name": "CineHDPlus",
             "description": "Películas y Series Latino (Voe, Mixdrop)",
-            "version": "1.0.0",
+            "version": "3.0.1",
             "author": "AdrianJael",
             "supportedTypes": [
                 "movie",
