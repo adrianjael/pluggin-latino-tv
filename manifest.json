@@ -1,12 +1,12 @@
 {
     "name": "Nuvio Latino TV",
-    "version": "2.1.1",
+    "version": "2.2.1",
     "scrapers": [
         {
             "id": "embed69",
             "name": "Embed69",
             "description": "Latino - si tiene ✅= Calidad Real, si no = Calidad Genérica",
-            "version": "1.3.42",
+            "version": "1.3.43",
             "author": "AdrianJael",
             "supportedTypes": [
                 "movie",
@@ -27,7 +27,7 @@
             "id": "sololatino",
             "name": "SoloLatino",
             "description": "Latino - Exclusivo (Voe, Filemoon, OkRu)",
-            "version": "1.0.0",
+            "version": "1.0.2",
             "author": "AdrianJael",
             "supportedTypes": [
                 "movie",
