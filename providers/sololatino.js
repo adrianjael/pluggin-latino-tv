@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T20:20:14.582Z
+ * Generado: 2026-04-27T20:22:17.033Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -89,7 +89,7 @@ var require_extractor = __commonJS({
       return __async(this, null, function* () {
         var _a;
         try {
-          console.log(`[SoloLatino] Deep v2.6.8: ${mediaType} ID:${tmdbId}`);
+          console.log(`[SoloLatino] Bypass v2.6.9: ${mediaType} ID:${tmdbId}`);
           let imdbId = tmdbId;
           if (!String(tmdbId).startsWith("tt")) {
             imdbId = yield tmdb.getImdbId(tmdbId, mediaType);
@@ -138,27 +138,27 @@ var require_extractor = __commonJS({
               if (!sData || !sData.u)
                 continue;
               let videoUrl = sData.u;
-              if (sData.sig) {
-                const proxyUrl = `${host}/p.php?url=${encodeURIComponent(videoUrl)}&sig=${sData.sig}`;
-                const proxyRes = yield fetch(proxyUrl, {
-                  method: "GET",
-                  headers: __spreadProps(__spreadValues({}, headers), { "Cookie": cookie })
-                });
-                const proxyHtml = yield proxyRes.text();
-                const m3u8Match = proxyHtml.match(/file\s*:\s*["'](https?:\/\/[^"']+\.m3u8[^"']*)["']/i) || proxyHtml.match(/source\s*:\s*["'](https?:\/\/[^"']+\.m3u8[^"']*)["']/i) || proxyHtml.match(/["'](https?:\/\/[^"']+\.m3u8[^"']*)["']/i);
-                if (m3u8Match) {
-                  videoUrl = m3u8Match[1];
-                  console.log(`[SoloLatino] \u2713 Extra\xEDdo video real: ${new URL(videoUrl).hostname}`);
-                } else {
-                  videoUrl = proxyUrl;
+              if (videoUrl.includes("p.php") || sData.sig) {
+                try {
+                  const urlParams = new URL(videoUrl.includes("?") ? videoUrl : `?${videoUrl}`).searchParams;
+                  const decodedUrl = urlParams.get("url");
+                  if (decodedUrl && decodedUrl.startsWith("http")) {
+                    videoUrl = decodedUrl;
+                    console.log(`[SoloLatino] \u2713 Proxy Bypass: ${new URL(videoUrl).hostname}`);
+                  }
+                } catch (e) {
+                  const match = videoUrl.match(/url=([^&]+)/);
+                  if (match)
+                    videoUrl = decodeURIComponent(match[1]);
                 }
               }
               const finalHeaders = {
                 "User-Agent": NUVIO_UA,
-                "Referer": videoUrl.includes("minochinos.com") ? "https://minochinos.com/" : host + "/"
+                "Referer": "https://player.pelisserieshoy.com/"
               };
-              if (cookie && videoUrl.includes("player.pelisserieshoy.com"))
+              if (cookie && videoUrl.includes("player.pelisserieshoy.com")) {
                 finalHeaders["Cookie"] = cookie;
+              }
               streams.push({
                 name: `SoloLatino - ${srv[0].replace(/🎬|🚀|✅/gu, "").trim()}`,
                 url: videoUrl,
