@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T20:28:57.632Z
+ * Generado: 2026-04-27T20:34:07.523Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -621,7 +621,7 @@ var require_extractor = __commonJS({
       return __async(this, null, function* () {
         var _a;
         try {
-          console.log(`[SoloLatino] Precision v2.7.1: ${mediaType} ID:${tmdbId}`);
+          console.log(`[SoloLatino] Source v2.7.2: ${mediaType} ID:${tmdbId}`);
           let imdbId = tmdbId;
           if (!String(tmdbId).startsWith("tt")) {
             imdbId = yield tmdb.getImdbId(tmdbId, mediaType);
@@ -671,8 +671,10 @@ var require_extractor = __commonJS({
                 continue;
               let videoUrl = sData.u;
               let originalProxyUrl = videoUrl;
-              if (videoUrl.includes("p.php") || sData.sig) {
+              if (sData.sig) {
                 originalProxyUrl = `${host}/p.php?url=${encodeURIComponent(videoUrl)}&sig=${sData.sig}`;
+                if (sData.src)
+                  originalProxyUrl += `&src=${sData.src}`;
                 try {
                   const urlParams = new URL(videoUrl.includes("?") ? videoUrl : `?${videoUrl}`).searchParams;
                   const decodedUrl = urlParams.get("url");
@@ -685,14 +687,34 @@ var require_extractor = __commonJS({
                     videoUrl = decodeURIComponent(match[1]);
                 }
               }
+              const finalHeaders = {
+                "User-Agent": NUVIO_UA,
+                "Referer": originalProxyUrl,
+                "origin": host
+                // Forzamos minúscula para compatibilidad legacy
+              };
+              if (cookie && videoUrl.includes("player.pelisserieshoy.com"))
+                finalHeaders["Cookie"] = cookie;
               const serverName = srv[0].toLowerCase();
               let resolved = null;
+              if (videoUrl.includes("/api/source/")) {
+                const id = videoUrl.split("/").pop();
+                const domain = new URL(videoUrl).hostname;
+                const apiRes = yield fetch(videoUrl, {
+                  method: "POST",
+                  headers: __spreadProps(__spreadValues({}, finalHeaders), { "Content-Type": "application/x-www-form-urlencoded" }),
+                  body: `r=https%3A%2F%2Fre.sololatino.net%2F&d=${domain}`
+                });
+                const apiData = yield apiRes.json();
+                if (apiData.success && apiData.data && apiData.data.length > 0) {
+                  const lastSource = apiData.data[apiData.data.length - 1];
+                  videoUrl = lastSource.file;
+                }
+              }
               if (videoUrl.includes("minochinos.com") || serverName.includes("vidhide")) {
                 resolved = yield resolvers.resolve("vidhide", videoUrl, originalProxyUrl);
               } else if (serverName.includes("filemoon") || videoUrl.includes("filemoon")) {
                 resolved = yield resolvers.resolve("filemoon", videoUrl, originalProxyUrl);
-              } else if (serverName.includes("voe") || videoUrl.includes("voe")) {
-                resolved = yield resolvers.resolve("voe", videoUrl, originalProxyUrl);
               }
               if (resolved && resolved.url) {
                 streams.push({
@@ -700,16 +722,15 @@ var require_extractor = __commonJS({
                   url: resolved.url,
                   quality: "1080p \u2705",
                   language: "Latino",
-                  headers: resolved.headers
+                  headers: __spreadProps(__spreadValues({}, resolved.headers), { "origin": host })
                 });
               } else {
                 streams.push({
                   name: `SoloLatino - ${srv[0].replace(/🎬|🚀|✅/gu, "").trim()}`,
-                  url: originalProxyUrl,
-                  // Usar proxy como fallback
+                  url: videoUrl,
                   quality: "1080p \u2705",
                   language: "Latino",
-                  headers: { "User-Agent": NUVIO_UA, "Referer": host + "/" }
+                  headers: finalHeaders
                 });
               }
             } catch (e) {
