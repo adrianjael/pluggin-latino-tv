@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T18:09:19.602Z
+ * Generado: 2026-04-27T18:12:44.968Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -84,12 +84,12 @@ var require_extractor = __commonJS({
     var tmdb = require_tmdb();
     var host = "https://player.pelisserieshoy.com";
     var refererBase = "https://sololatino.net/";
-    var UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+    var NUVIO_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
     function getStreams2(tmdbId, mediaType, season, episode) {
       return __async(this, null, function* () {
         var _a;
         try {
-          console.log(`[SoloLatino] Disguise v2.6.3: ${mediaType} ID:${tmdbId}`);
+          console.log(`[SoloLatino] Unified v2.6.4: ${mediaType} ID:${tmdbId}`);
           let imdbId = tmdbId;
           if (!String(tmdbId).startsWith("tt")) {
             imdbId = yield tmdb.getImdbId(tmdbId, mediaType);
@@ -100,7 +100,7 @@ var require_extractor = __commonJS({
           const ep = String(episode || 1).padStart(2, "0");
           const slug = isMovie ? imdbId : `${imdbId}-${season || 1}x${ep}`;
           const playerUrl = `${host}/f/${slug}`;
-          const headers = { "User-Agent": UA, "Referer": refererBase };
+          const headers = { "User-Agent": NUVIO_UA, "Referer": refererBase };
           const response = yield fetch(playerUrl, { headers });
           if (!response.ok)
             return [];
@@ -152,10 +152,10 @@ var require_extractor = __commonJS({
                   videoUrl = proxyUrl;
               }
               if (videoUrl.includes("cloudwindow-route.com") || videoUrl.includes("cloud-route.com")) {
-                videoUrl += (videoUrl.includes("?") ? "&" : "?") + "referer=https://www.google.com/";
+                videoUrl += (videoUrl.includes("?") ? "&" : "?") + "referer=" + encodeURIComponent(refererBase);
               }
               if (!videoUrl.toLowerCase().includes(".m3u8")) {
-                videoUrl += videoUrl.includes("?") ? "&format=.m3u8" : "?.m3u8";
+                videoUrl += videoUrl.includes("?") ? "&ext=.m3u8" : "?.m3u8";
               }
               videoUrl += "#.m3u8";
               streams.push({
@@ -163,7 +163,7 @@ var require_extractor = __commonJS({
                 url: videoUrl,
                 quality: "1080p \u2705",
                 language: "Latino"
-                // No enviamos headers para evitar que Nuvio Mobile ensucie la petición
+                // No enviamos headers al resultado para que Nuvio use su propia identidad nativa (que ya clonamos)
               });
             } catch (e) {
             }
