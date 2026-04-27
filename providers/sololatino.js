@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T20:16:50.269Z
+ * Generado: 2026-04-27T20:19:34.095Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -89,7 +89,7 @@ var require_extractor = __commonJS({
       return __async(this, null, function* () {
         var _a;
         try {
-          console.log(`[SoloLatino] Precision v2.6.6: ${mediaType} ID:${tmdbId}`);
+          console.log(`[SoloLatino] Resolved v2.6.7: ${mediaType} ID:${tmdbId}`);
           let imdbId = tmdbId;
           if (!String(tmdbId).startsWith("tt")) {
             imdbId = yield tmdb.getImdbId(tmdbId, mediaType);
@@ -138,20 +138,34 @@ var require_extractor = __commonJS({
               if (!sData || !sData.u)
                 continue;
               let videoUrl = sData.u;
-              let proxyUrl = videoUrl;
               if (sData.sig) {
-                proxyUrl = `${host}/p.php?url=${encodeURIComponent(videoUrl)}&sig=${sData.sig}`;
+                const proxyUrl = `${host}/p.php?url=${encodeURIComponent(videoUrl)}&sig=${sData.sig}`;
+                const proxyRes = yield fetch(proxyUrl, {
+                  method: "GET",
+                  headers: __spreadProps(__spreadValues({}, headers), { "Cookie": cookie }),
+                  redirect: "manual"
+                });
+                const location = proxyRes.headers.get("location");
+                if (location) {
+                  videoUrl = location;
+                } else {
+                  videoUrl = proxyUrl;
+                }
               }
+              if (videoUrl.includes("cloudwindow-route.com") || videoUrl.includes("cloud-route.com")) {
+                videoUrl += (videoUrl.includes("?") ? "&" : "?") + "referer=" + encodeURIComponent(refererBase);
+              }
+              if (!videoUrl.toLowerCase().includes(".m3u8")) {
+                videoUrl += videoUrl.includes("?") ? "&ext=.m3u8" : "?.m3u8";
+              }
+              videoUrl += "#.m3u8";
               const finalHeaders = {
                 "User-Agent": NUVIO_UA,
-                "Referer": proxyUrl,
-                "Origin": host
+                "Referer": host + "/"
               };
-              if (cookie)
-                finalHeaders["Cookie"] = cookie;
               streams.push({
                 name: `SoloLatino - ${srv[0].replace(/🎬|🚀|✅/gu, "").trim()}`,
-                url: proxyUrl,
+                url: videoUrl,
                 quality: "1080p \u2705",
                 language: "Latino",
                 headers: finalHeaders
