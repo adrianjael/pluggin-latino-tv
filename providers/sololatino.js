@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T16:48:47.542Z
+ * Generado: 2026-04-27T16:52:49.315Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -183,7 +183,8 @@ var require_extractor = __commonJS({
                 language: "Latino",
                 headers: {
                   "User-Agent": UA,
-                  "Referer": `${host}/`,
+                  "Referer": playerUrl,
+                  // Referer específico de la película
                   "Origin": host,
                   "Accept": "*/*",
                   "Cookie": cookie
