@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-27T20:26:19.499Z
+ * Generado: 2026-04-27T20:28:57.601Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -130,16 +130,17 @@ var require_vidhide = __commonJS({
   "src/shared/resolvers/vidhide.js"(exports2, module2) {
     var { unpack } = require_unpacker();
     var USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
-    function resolveVidhide(url) {
+    function resolveVidhide(url, customReferer) {
       return __async(this, null, function* () {
         var _a;
         try {
           console.log(`[Resolvers] Resolviendo VidHide: ${url}`);
           const origin = new URL(url).origin;
+          const referer = customReferer || "https://embed69.org/";
           const response = yield fetch(url, {
             headers: {
               "User-Agent": USER_AGENT,
-              "Referer": "https://embed69.org/"
+              "Referer": referer
             }
           });
           const html = yield response.text();
@@ -157,7 +158,10 @@ var require_vidhide = __commonJS({
           return {
             url: finalUrl,
             quality: "1080p",
-            headers: { "Referer": `${origin}/` }
+            headers: {
+              "User-Agent": USER_AGENT,
+              "Referer": `${origin}/`
+            }
           };
         } catch (e) {
           console.error(`[Resolvers] Error en VidHide: ${e.message}`);

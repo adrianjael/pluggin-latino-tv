@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T20:26:19.535Z
+ * Generado: 2026-04-27T20:28:57.632Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -123,16 +123,17 @@ var require_vidhide = __commonJS({
   "src/shared/resolvers/vidhide.js"(exports2, module2) {
     var { unpack } = require_unpacker();
     var USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
-    function resolveVidhide(url) {
+    function resolveVidhide(url, customReferer) {
       return __async(this, null, function* () {
         var _a;
         try {
           console.log(`[Resolvers] Resolviendo VidHide: ${url}`);
           const origin = new URL(url).origin;
+          const referer = customReferer || "https://embed69.org/";
           const response = yield fetch(url, {
             headers: {
               "User-Agent": USER_AGENT,
-              "Referer": "https://embed69.org/"
+              "Referer": referer
             }
           });
           const html = yield response.text();
@@ -150,7 +151,10 @@ var require_vidhide = __commonJS({
           return {
             url: finalUrl,
             quality: "1080p",
-            headers: { "Referer": `${origin}/` }
+            headers: {
+              "User-Agent": USER_AGENT,
+              "Referer": `${origin}/`
+            }
           };
         } catch (e) {
           console.error(`[Resolvers] Error en VidHide: ${e.message}`);
@@ -617,7 +621,7 @@ var require_extractor = __commonJS({
       return __async(this, null, function* () {
         var _a;
         try {
-          console.log(`[SoloLatino] Resolver v2.7.0: ${mediaType} ID:${tmdbId}`);
+          console.log(`[SoloLatino] Precision v2.7.1: ${mediaType} ID:${tmdbId}`);
           let imdbId = tmdbId;
           if (!String(tmdbId).startsWith("tt")) {
             imdbId = yield tmdb.getImdbId(tmdbId, mediaType);
@@ -666,7 +670,9 @@ var require_extractor = __commonJS({
               if (!sData || !sData.u)
                 continue;
               let videoUrl = sData.u;
+              let originalProxyUrl = videoUrl;
               if (videoUrl.includes("p.php") || sData.sig) {
+                originalProxyUrl = `${host}/p.php?url=${encodeURIComponent(videoUrl)}&sig=${sData.sig}`;
                 try {
                   const urlParams = new URL(videoUrl.includes("?") ? videoUrl : `?${videoUrl}`).searchParams;
                   const decodedUrl = urlParams.get("url");
@@ -682,11 +688,11 @@ var require_extractor = __commonJS({
               const serverName = srv[0].toLowerCase();
               let resolved = null;
               if (videoUrl.includes("minochinos.com") || serverName.includes("vidhide")) {
-                resolved = yield resolvers.resolve("vidhide", videoUrl);
+                resolved = yield resolvers.resolve("vidhide", videoUrl, originalProxyUrl);
               } else if (serverName.includes("filemoon") || videoUrl.includes("filemoon")) {
-                resolved = yield resolvers.resolve("filemoon", videoUrl);
+                resolved = yield resolvers.resolve("filemoon", videoUrl, originalProxyUrl);
               } else if (serverName.includes("voe") || videoUrl.includes("voe")) {
-                resolved = yield resolvers.resolve("voe", videoUrl);
+                resolved = yield resolvers.resolve("voe", videoUrl, originalProxyUrl);
               }
               if (resolved && resolved.url) {
                 streams.push({
@@ -694,12 +700,13 @@ var require_extractor = __commonJS({
                   url: resolved.url,
                   quality: "1080p \u2705",
                   language: "Latino",
-                  headers: resolved.headers || { "User-Agent": NUVIO_UA, "Referer": host + "/" }
+                  headers: resolved.headers
                 });
               } else {
                 streams.push({
                   name: `SoloLatino - ${srv[0].replace(/🎬|🚀|✅/gu, "").trim()}`,
-                  url: videoUrl,
+                  url: originalProxyUrl,
+                  // Usar proxy como fallback
                   quality: "1080p \u2705",
                   language: "Latino",
                   headers: { "User-Agent": NUVIO_UA, "Referer": host + "/" }
