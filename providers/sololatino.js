@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T15:15:21.107Z
+ * Generado: 2026-04-27T15:21:35.569Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -695,19 +695,13 @@ var require_extractor = __commonJS({
               const isProxy = embedUrl.includes("p.php?url=");
               const isInternal = embedUrl.startsWith("/p.php?v=");
               if (isProxy || isInternal) {
-                let realUrl = "";
-                if (isProxy) {
-                  const urlParams = new URLSearchParams(embedUrl.split("?")[1]);
-                  realUrl = urlParams.get("url") || embedUrl;
-                } else {
-                  realUrl = `${host}${embedUrl}`;
-                }
+                const fullUrl = isInternal ? `${host}${embedUrl}` : embedUrl;
                 let realSrv = srv[0];
-                if (realUrl.includes("minochinos") || realUrl.includes("masukestin"))
+                if (fullUrl.includes("minochinos") || fullUrl.includes("masukestin"))
                   realSrv = "VidHide";
-                else if (realUrl.includes("r66nv9ed"))
+                else if (fullUrl.includes("r66nv9ed"))
                   realSrv = "Filemoon";
-                else if (realUrl.includes("cloudwindow"))
+                else if (fullUrl.includes("cloudwindow"))
                   realSrv = "VOE";
                 const formatServer = (name) => {
                   if (!name)
@@ -716,11 +710,10 @@ var require_extractor = __commonJS({
                 };
                 streams.push({
                   name: `SoloLatino - ${formatServer(realSrv)}`,
-                  url: realUrl,
-                  // Usamos la URL directa extraída
+                  url: fullUrl,
                   quality: "1080p \u2705",
                   language: "Latino",
-                  headers: { "Referer": playerUrl, "User-Agent": UA }
+                  headers: { "Referer": host + "/", "User-Agent": UA }
                 });
               } else {
                 const res = yield resolvers.resolve(srv[0], embedUrl);
