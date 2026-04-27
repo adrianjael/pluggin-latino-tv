@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T17:33:46.218Z
+ * Generado: 2026-04-27T17:42:04.801Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -116,7 +116,7 @@ var require_extractor = __commonJS({
       return __async(this, null, function* () {
         var _a;
         try {
-          console.log(`[SoloLatino] B\xFAsqueda v2.5.5: ${mediaType} ID:${tmdbId}`);
+          console.log(`[SoloLatino] B\xFAsqueda v2.5.6: ${mediaType} ID:${tmdbId}`);
           let imdbId = tmdbId;
           if (!String(tmdbId).startsWith("tt")) {
             imdbId = yield tmdb.getImdbId(tmdbId, mediaType);
@@ -131,15 +131,17 @@ var require_extractor = __commonJS({
             "User-Agent": UA,
             "Referer": refererBase,
             "sec-ch-ua-platform": '"Android"',
-            "sec-ch-ua-mobile": "?1",
             "sec-ch-ua": '"Google Chrome";v="147", "Not.A/Brand";v="8", "Chromium";v="147"'
           };
           const response = yield fetch(playerUrl, { headers: stealthHeaders });
           if (!response.ok)
             return [];
           const html = yield response.text();
-          const setCookieHeader = response.headers.get("set-cookie");
-          const cookie = setCookieHeader ? setCookieHeader.split(",").map((c) => c.split(";")[0].trim()).join("; ") : "";
+          const setCookieHeaders = response.headers.get("set-cookie");
+          let cookie = "";
+          if (setCookieHeaders) {
+            cookie = setCookieHeaders.split(",").map((c) => c.split(";")[0].trim()).join("; ");
+          }
           const tokenMatch = html.match(/(?:let\s+token|const\s+_t|tok|_t|token)\s*.*['"]([a-f0-9]{32})['"]/i);
           const token = tokenMatch ? tokenMatch[1] : "";
           if (!token)
@@ -168,22 +170,21 @@ var require_extractor = __commonJS({
               if (!sData || !sData.u)
                 continue;
               let finalUrl = sData.u;
-              const isVidHide = finalUrl.includes("masukestin.com") || finalUrl.includes("minochinos.com") || finalUrl.includes("vidhide.com") || finalUrl.includes("cloudwindow-route.com");
-              if (isVidHide) {
-                if (!finalUrl.includes(".m3u8")) {
-                  const embedRes = yield fetch(finalUrl, { headers: { "User-Agent": UA, "Referer": host } });
-                  if (embedRes.ok) {
-                    const embedHtml = yield embedRes.text();
-                    const packedMatch = embedHtml.match(/eval\(function\(p,a,c,k,e,[rd]\)[\s\S]*?\.split\('\|'\)[^\)]*\)\)/);
-                    if (packedMatch) {
-                      const unpacked = unpackVidHide(packedMatch[0]);
-                      const hlsMatch = unpacked ? unpacked.match(/"hls[24]"\s*:\s*"([^"]+)"/) : null;
-                      if (hlsMatch)
-                        finalUrl = hlsMatch[1];
+              const isVidHide = finalUrl.includes("masukestin.com") || finalUrl.includes("minochinos.com") || finalUrl.includes("vidhide.com");
+              if (isVidHide && !finalUrl.includes(".m3u8")) {
+                const embedRes = yield fetch(finalUrl, { headers: { "User-Agent": UA, "Referer": host } });
+                if (embedRes.ok) {
+                  const embedHtml = yield embedRes.text();
+                  const packedMatch = embedHtml.match(/eval\(function\(p,a,c,k,e,[rd]\)[\s\S]*?\.split\('\|'\)[^\)]*\)\)/);
+                  if (packedMatch) {
+                    const unpacked = unpackVidHide(packedMatch[0]);
+                    const hlsMatch = unpacked ? unpacked.match(/"hls[24]"\s*:\s*"([^"]+)"/) : null;
+                    if (hlsMatch) {
+                      finalUrl = hlsMatch[1];
+                      finalUrl += (finalUrl.includes("?") ? "&" : "?") + "referer=embed69.org";
                     }
                   }
                 }
-                finalUrl += (finalUrl.includes("?") ? "&" : "?") + "referer=embed69.org";
               } else if (sData.sig) {
                 finalUrl = `${host}/p.php?url=${encodeURIComponent(finalUrl)}&sig=${sData.sig}`;
               } else if (finalUrl.startsWith("/")) {
@@ -194,14 +195,12 @@ var require_extractor = __commonJS({
               const resultHeaders = {
                 "User-Agent": UA,
                 "Referer": finalUrl,
-                // Auto-Referer del CURL
                 "Origin": host,
+                "Cookie": cookie,
+                // La pieza clave
                 "sec-ch-ua-platform": '"Android"',
-                "sec-ch-ua-mobile": "?1",
-                "Range": "bytes=0-"
+                "X-Requested-With": "XMLHttpRequest"
               };
-              if (cookie)
-                resultHeaders["Cookie"] = cookie;
               streams.push({
                 name: `SoloLatino - ${srv[0].replace(/🎬|🚀|✅/gu, "").trim()}`,
                 url: finalUrl,
