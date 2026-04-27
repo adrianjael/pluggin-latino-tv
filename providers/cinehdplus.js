@@ -1,6 +1,6 @@
 /**
  * cinehdplus - Plugin Nuvio
- * Generado: 2026-04-27T22:40:17.612Z
+ * Generado: 2026-04-27T22:55:14.862Z
  */
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __commonJS = (cb, mod) => function __require() {
@@ -682,14 +682,12 @@ var require_extractor = __commonJS({
           const form1Value = $1('input[name="url"]').attr("value");
           if (!form1Value)
             return null;
+          const step2Body = new URLSearchParams();
+          step2Body.append("url", form1Value);
           const step2Res = yield fetch(`${apiURL}/ir/rd.php`, {
             method: "POST",
-            headers: {
-              "User-Agent": NUVIO_UA,
-              "Referer": step1Url,
-              "Content-Type": "application/x-www-form-urlencoded"
-            },
-            body: `url=${encodeURIComponent(form1Value)}`
+            headers: { "User-Agent": NUVIO_UA, "Referer": step1Url },
+            body: step2Body
           });
           const step2Html = yield step2Res.text();
           const $2 = cheerio.load(step2Html);
@@ -699,14 +697,13 @@ var require_extractor = __commonJS({
           if (!form2Value)
             return null;
           const step3Url = `${apiURL}/ir/${form2Action}`;
+          const step3Body = new URLSearchParams();
+          step3Body.append("url", form2Value);
+          step3Body.append("dl", form2Dl);
           const step3Res = yield fetch(step3Url, {
             method: "POST",
-            headers: {
-              "User-Agent": NUVIO_UA,
-              "Referer": `${apiURL}/ir/go_ddh.php`,
-              "Content-Type": "application/x-www-form-urlencoded"
-            },
-            body: `url=${encodeURIComponent(form2Value)}&dl=${form2Dl}`
+            headers: { "User-Agent": NUVIO_UA, "Referer": `${apiURL}/ir/go_ddh.php` },
+            body: step3Body
           });
           if (!step3Res.ok)
             return null;
