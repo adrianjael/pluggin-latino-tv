@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T16:38:44.559Z
+ * Generado: 2026-04-27T16:48:47.542Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -87,7 +87,7 @@ var require_extractor = __commonJS({
     function getStreams2(tmdbId, mediaType, season, episode) {
       return __async(this, null, function* () {
         try {
-          console.log(`[SoloLatino] B\xFAsqueda v2.4.1: ${mediaType} ID:${tmdbId}`);
+          console.log(`[SoloLatino] B\xFAsqueda v2.4.5 (Legacy Mode): ${mediaType} ID:${tmdbId}`);
           let imdbId = tmdbId;
           if (!String(tmdbId).startsWith("tt")) {
             imdbId = yield tmdb.getImdbId(tmdbId, mediaType);
@@ -98,19 +98,27 @@ var require_extractor = __commonJS({
           const ep = String(episode || 1).padStart(2, "0");
           const slug = isMovie ? imdbId : `${imdbId}-${season || 1}x${ep}`;
           const playerUrl = `${host}/f/${slug}`;
-          const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36";
-          const response = yield fetch(playerUrl, {
-            headers: {
-              "User-Agent": UA,
-              "Referer": refererBase
-            }
-          });
+          const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36";
+          const stealthHeaders = {
+            "User-Agent": UA,
+            "Referer": refererBase,
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+            "Accept-Language": "es-MX,es;q=0.9,en;q=0.8",
+            "sec-ch-ua": '"Chromium";v="137", "Not-A.Brand";v="24", "Google Chrome";v="137"',
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": '"Windows"',
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "none",
+            "Upgrade-Insecure-Requests": "1"
+          };
+          const response = yield fetch(playerUrl, { headers: stealthHeaders });
           if (!response.ok)
             return [];
           const html = yield response.text();
           const setCookie = response.headers.get("set-cookie") || "";
           const cookie = setCookie.split(";")[0];
-          const tokenMatch = html.match(/const\s+_t\s*=\s*['"]([a-f0-9]{32})['"]/i);
+          const tokenMatch = html.match(/(?:let\s+token|const\s+_t|tok|_t|token)\s*.*['"]([a-f0-9]{32})['"]/i);
           const token = tokenMatch ? tokenMatch[1] : "";
           if (!token)
             return [];
@@ -118,7 +126,9 @@ var require_extractor = __commonJS({
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
             "User-Agent": UA,
             "Referer": playerUrl,
-            "X-Requested-With": "XMLHttpRequest"
+            "X-Requested-With": "XMLHttpRequest",
+            "sec-ch-ua": stealthHeaders["sec-ch-ua"],
+            "sec-ch-ua-platform": '"Windows"'
           };
           if (cookie)
             commonHeaders["Cookie"] = cookie;
@@ -127,7 +137,9 @@ var require_extractor = __commonJS({
             method: "POST",
             headers: commonHeaders,
             body: `a=click&tok=${token}`
+          }).catch(() => {
           });
+          yield new Promise((r) => setTimeout(r, 1200));
           const listRes = yield fetch(`${host}/s.php`, {
             method: "POST",
             headers: commonHeaders,
@@ -147,12 +159,11 @@ var require_extractor = __commonJS({
               const sData = yield sResponse.json();
               if (!sData || !sData.u)
                 continue;
-              let videoUrl = sData.u;
-              let finalUrl = videoUrl;
+              let finalUrl = sData.u;
               if (sData.sig) {
-                finalUrl = `${host}/p.php?url=${encodeURIComponent(videoUrl)}&sig=${sData.sig}`;
-              } else if (videoUrl.startsWith("/")) {
-                finalUrl = host + videoUrl;
+                finalUrl = `${host}/p.php?url=${encodeURIComponent(sData.u)}&sig=${sData.sig}`;
+              } else if (finalUrl.startsWith("/")) {
+                finalUrl = host + finalUrl;
               }
               if (!finalUrl.includes(".m3u8") && !finalUrl.includes(".mp4")) {
                 finalUrl += "#.mp4";
@@ -176,7 +187,6 @@ var require_extractor = __commonJS({
                   "Origin": host,
                   "Accept": "*/*",
                   "Cookie": cookie
-                  // Inyectar la cookie de sesión capturada
                 }
               });
             } catch (e) {
