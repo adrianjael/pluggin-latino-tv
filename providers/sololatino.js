@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T17:31:22.851Z
+ * Generado: 2026-04-27T17:33:46.218Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -116,7 +116,7 @@ var require_extractor = __commonJS({
       return __async(this, null, function* () {
         var _a;
         try {
-          console.log(`[SoloLatino] B\xFAsqueda v2.5.4: ${mediaType} ID:${tmdbId}`);
+          console.log(`[SoloLatino] B\xFAsqueda v2.5.5: ${mediaType} ID:${tmdbId}`);
           let imdbId = tmdbId;
           if (!String(tmdbId).startsWith("tt")) {
             imdbId = yield tmdb.getImdbId(tmdbId, mediaType);
@@ -168,12 +168,8 @@ var require_extractor = __commonJS({
               if (!sData || !sData.u)
                 continue;
               let finalUrl = sData.u;
-              if (sData.sig && finalUrl.includes("cloudwindow-route.com")) {
-                finalUrl = sData.u;
-                if (!finalUrl.includes("referer=")) {
-                  finalUrl += (finalUrl.includes("?") ? "&" : "?") + "referer=sololatino.net";
-                }
-              } else if (finalUrl.includes("masukestin.com") || finalUrl.includes("minochinos.com") || finalUrl.includes("vidhide.com")) {
+              const isVidHide = finalUrl.includes("masukestin.com") || finalUrl.includes("minochinos.com") || finalUrl.includes("vidhide.com") || finalUrl.includes("cloudwindow-route.com");
+              if (isVidHide) {
                 if (!finalUrl.includes(".m3u8")) {
                   const embedRes = yield fetch(finalUrl, { headers: { "User-Agent": UA, "Referer": host } });
                   if (embedRes.ok) {
@@ -187,6 +183,7 @@ var require_extractor = __commonJS({
                     }
                   }
                 }
+                finalUrl += (finalUrl.includes("?") ? "&" : "?") + "referer=embed69.org";
               } else if (sData.sig) {
                 finalUrl = `${host}/p.php?url=${encodeURIComponent(finalUrl)}&sig=${sData.sig}`;
               } else if (finalUrl.startsWith("/")) {
@@ -196,8 +193,8 @@ var require_extractor = __commonJS({
                 finalUrl += "#.mp4";
               const resultHeaders = {
                 "User-Agent": UA,
-                "Referer": host + "/",
-                // Referer a la raíz del reproductor para mayor compatibilidad
+                "Referer": finalUrl,
+                // Auto-Referer del CURL
                 "Origin": host,
                 "sec-ch-ua-platform": '"Android"',
                 "sec-ch-ua-mobile": "?1",
