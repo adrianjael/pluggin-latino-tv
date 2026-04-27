@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T15:10:11.563Z
+ * Generado: 2026-04-27T15:15:21.107Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -695,13 +695,19 @@ var require_extractor = __commonJS({
               const isProxy = embedUrl.includes("p.php?url=");
               const isInternal = embedUrl.startsWith("/p.php?v=");
               if (isProxy || isInternal) {
-                const fullUrl = isInternal ? `${host}${embedUrl}` : embedUrl;
+                let realUrl = "";
+                if (isProxy) {
+                  const urlParams = new URLSearchParams(embedUrl.split("?")[1]);
+                  realUrl = urlParams.get("url") || embedUrl;
+                } else {
+                  realUrl = `${host}${embedUrl}`;
+                }
                 let realSrv = srv[0];
-                if (fullUrl.includes("minochinos") || fullUrl.includes("masukestin"))
+                if (realUrl.includes("minochinos") || realUrl.includes("masukestin"))
                   realSrv = "VidHide";
-                else if (fullUrl.includes("r66nv9ed"))
+                else if (realUrl.includes("r66nv9ed"))
                   realSrv = "Filemoon";
-                else if (fullUrl.includes("cloudwindow"))
+                else if (realUrl.includes("cloudwindow"))
                   realSrv = "VOE";
                 const formatServer = (name) => {
                   if (!name)
@@ -710,7 +716,8 @@ var require_extractor = __commonJS({
                 };
                 streams.push({
                   name: `SoloLatino - ${formatServer(realSrv)}`,
-                  url: fullUrl,
+                  url: realUrl,
+                  // Usamos la URL directa extraída
                   quality: "1080p \u2705",
                   language: "Latino",
                   headers: { "Referer": playerUrl, "User-Agent": UA }
