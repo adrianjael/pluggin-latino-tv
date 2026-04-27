@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T20:34:07.523Z
+ * Generado: 2026-04-27T20:41:53.346Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -621,7 +621,7 @@ var require_extractor = __commonJS({
       return __async(this, null, function* () {
         var _a;
         try {
-          console.log(`[SoloLatino] Source v2.7.2: ${mediaType} ID:${tmdbId}`);
+          console.log(`[SoloLatino] ProxySim v2.7.3: ${mediaType} ID:${tmdbId}`);
           let imdbId = tmdbId;
           if (!String(tmdbId).startsWith("tt")) {
             imdbId = yield tmdb.getImdbId(tmdbId, mediaType);
@@ -631,9 +631,9 @@ var require_extractor = __commonJS({
           const isMovie = mediaType === "movie";
           const ep = String(episode || 1).padStart(2, "0");
           const slug = isMovie ? imdbId : `${imdbId}-${season || 1}x${ep}`;
-          const playerUrl = `${host}/f/${slug}`;
+          const oWeb = `${host}/f/${slug}`;
           const headers = { "User-Agent": NUVIO_UA, "Referer": refererBase };
-          const response = yield fetch(playerUrl, { headers });
+          const response = yield fetch(oWeb, { headers });
           if (!response.ok)
             return [];
           const html = yield response.text();
@@ -648,7 +648,7 @@ var require_extractor = __commonJS({
             return [];
           const commonHeaders = __spreadProps(__spreadValues({}, headers), {
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-            "Referer": playerUrl,
+            "Referer": oWeb,
             "X-Requested-With": "XMLHttpRequest"
           });
           if (cookie)
@@ -670,51 +670,55 @@ var require_extractor = __commonJS({
               if (!sData || !sData.u)
                 continue;
               let videoUrl = sData.u;
-              let originalProxyUrl = videoUrl;
-              if (sData.sig) {
-                originalProxyUrl = `${host}/p.php?url=${encodeURIComponent(videoUrl)}&sig=${sData.sig}`;
-                if (sData.src)
-                  originalProxyUrl += `&src=${sData.src}`;
-                try {
-                  const urlParams = new URL(videoUrl.includes("?") ? videoUrl : `?${videoUrl}`).searchParams;
-                  const decodedUrl = urlParams.get("url");
-                  if (decodedUrl && decodedUrl.startsWith("http")) {
-                    videoUrl = decodedUrl;
-                  }
-                } catch (e) {
-                  const match = videoUrl.match(/url=([^&]+)/);
-                  if (match)
-                    videoUrl = decodeURIComponent(match[1]);
-                }
-              }
-              const finalHeaders = {
+              const masterHeaders = {
                 "User-Agent": NUVIO_UA,
-                "Referer": originalProxyUrl,
+                "Referer": oWeb,
                 "origin": host
-                // Forzamos minúscula para compatibilidad legacy
               };
-              if (cookie && videoUrl.includes("player.pelisserieshoy.com"))
-                finalHeaders["Cookie"] = cookie;
-              const serverName = srv[0].toLowerCase();
-              let resolved = null;
+              if (cookie)
+                masterHeaders["Cookie"] = cookie;
               if (videoUrl.includes("/api/source/")) {
-                const id = videoUrl.split("/").pop();
                 const domain = new URL(videoUrl).hostname;
                 const apiRes = yield fetch(videoUrl, {
                   method: "POST",
-                  headers: __spreadProps(__spreadValues({}, finalHeaders), { "Content-Type": "application/x-www-form-urlencoded" }),
+                  headers: __spreadProps(__spreadValues({}, masterHeaders), { "Content-Type": "application/x-www-form-urlencoded" }),
                   body: `r=https%3A%2F%2Fre.sololatino.net%2F&d=${domain}`
                 });
                 const apiData = yield apiRes.json();
                 if (apiData.success && apiData.data && apiData.data.length > 0) {
-                  const lastSource = apiData.data[apiData.data.length - 1];
-                  videoUrl = lastSource.file;
+                  videoUrl = apiData.data[apiData.data.length - 1].file;
+                }
+              } else if (sData.sig) {
+                const proxyUrl = `${host}/p.php?url=${encodeURIComponent(videoUrl)}&sig=${sData.sig}` + (sData.src ? `&src=${sData.src}` : "");
+                const proxyRes = yield fetch(proxyUrl, {
+                  method: "GET",
+                  headers: masterHeaders,
+                  redirect: "manual"
+                  // Evitamos que siga la redirección
+                });
+                const location = proxyRes.headers.get("location");
+                if (location) {
+                  videoUrl = location;
+                  console.log(`[SoloLatino] Redirecci\xF3n interceptada: ${new URL(videoUrl).hostname}`);
+                } else {
+                  try {
+                    const urlParams = new URL(proxyUrl).searchParams;
+                    const decoded = urlParams.get("url");
+                    if (decoded && decoded.startsWith("http"))
+                      videoUrl = decoded;
+                  } catch (e) {
+                    videoUrl = proxyUrl;
+                  }
                 }
               }
+              const serverName = srv[0].toLowerCase();
+              let resolved = null;
               if (videoUrl.includes("minochinos.com") || serverName.includes("vidhide")) {
-                resolved = yield resolvers.resolve("vidhide", videoUrl, originalProxyUrl);
+                resolved = yield resolvers.resolve("vidhide", videoUrl, oWeb);
               } else if (serverName.includes("filemoon") || videoUrl.includes("filemoon")) {
-                resolved = yield resolvers.resolve("filemoon", videoUrl, originalProxyUrl);
+                resolved = yield resolvers.resolve("filemoon", videoUrl, oWeb);
+              } else if (serverName.includes("voe") || videoUrl.includes("voe")) {
+                resolved = yield resolvers.resolve("voe", videoUrl, oWeb);
               }
               if (resolved && resolved.url) {
                 streams.push({
@@ -722,7 +726,10 @@ var require_extractor = __commonJS({
                   url: resolved.url,
                   quality: "1080p \u2705",
                   language: "Latino",
-                  headers: __spreadProps(__spreadValues({}, resolved.headers), { "origin": host })
+                  headers: __spreadProps(__spreadValues({}, resolved.headers), {
+                    "Referer": oWeb,
+                    "origin": host
+                  })
                 });
               } else {
                 streams.push({
@@ -730,7 +737,8 @@ var require_extractor = __commonJS({
                   url: videoUrl,
                   quality: "1080p \u2705",
                   language: "Latino",
-                  headers: finalHeaders
+                  headers: masterHeaders
+                  // Siempre pasamos Referer y origin de tu código
                 });
               }
             } catch (e) {
