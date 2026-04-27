@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T21:22:59.368Z
+ * Generado: 2026-04-27T21:28:58.045Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -89,7 +89,7 @@ var require_extractor = __commonJS({
       return __async(this, null, function* () {
         var _a;
         try {
-          console.log(`[SoloLatino] Wrapper v2.7.7: ${mediaType} ID:${tmdbId}`);
+          console.log(`[SoloLatino] QueryHack v2.7.8: ${mediaType} ID:${tmdbId}`);
           let imdbId = tmdbId;
           if (!String(tmdbId).startsWith("tt")) {
             imdbId = yield tmdb.getImdbId(tmdbId, mediaType);
@@ -172,15 +172,12 @@ var require_extractor = __commonJS({
                   if (sData.src)
                     proxyUrl += `&src=${sData.src}`;
                 }
-                const fakeMaster = `#EXTM3U
-#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=1500000,RESOLUTION=1280x720
-${proxyUrl}
-`;
-                const base64FakeMaster = Buffer.from(fakeMaster).toString("base64");
-                const dataUriWrapper = `data:application/vnd.apple.mpegurl;base64,${base64FakeMaster}`;
+                if (!proxyUrl.includes(".m3u8")) {
+                  proxyUrl += (proxyUrl.includes("?") ? "&" : "?") + "hack=.m3u8";
+                }
                 streams.push({
                   name: `SoloLatino - ${srv[0].replace(/🎬|🚀|✅/gu, "").trim()}`,
-                  url: dataUriWrapper,
+                  url: proxyUrl,
                   quality: "1080p \u2705",
                   language: "Latino",
                   headers: masterHeaders
