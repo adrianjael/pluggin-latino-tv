@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T17:52:01.712Z
+ * Generado: 2026-04-27T17:57:07.047Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -84,12 +84,12 @@ var require_extractor = __commonJS({
     var tmdb = require_tmdb();
     var host = "https://player.pelisserieshoy.com";
     var refererBase = "https://sololatino.net/";
-    var UA = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Mobile Safari/537.36";
+    var UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
     function getStreams2(tmdbId, mediaType, season, episode) {
       return __async(this, null, function* () {
         var _a;
         try {
-          console.log(`[SoloLatino] Resolviendo v2.6.0: ${mediaType} ID:${tmdbId}`);
+          console.log(`[SoloLatino] Sync v2.6.1: ${mediaType} ID:${tmdbId}`);
           let imdbId = tmdbId;
           if (!String(tmdbId).startsWith("tt")) {
             imdbId = yield tmdb.getImdbId(tmdbId, mediaType);
@@ -100,13 +100,8 @@ var require_extractor = __commonJS({
           const ep = String(episode || 1).padStart(2, "0");
           const slug = isMovie ? imdbId : `${imdbId}-${season || 1}x${ep}`;
           const playerUrl = `${host}/f/${slug}`;
-          const stealthHeaders = {
-            "User-Agent": UA,
-            "Referer": refererBase,
-            "sec-ch-ua-platform": '"Android"',
-            "sec-ch-ua": '"Google Chrome";v="147", "Not.A/Brand";v="8", "Chromium";v="147"'
-          };
-          const response = yield fetch(playerUrl, { headers: stealthHeaders });
+          const headers = { "User-Agent": UA, "Referer": refererBase };
+          const response = yield fetch(playerUrl, { headers });
           if (!response.ok)
             return [];
           const html = yield response.text();
@@ -119,7 +114,7 @@ var require_extractor = __commonJS({
           const token = tokenMatch ? tokenMatch[1] : "";
           if (!token)
             return [];
-          const commonHeaders = __spreadProps(__spreadValues({}, stealthHeaders), {
+          const commonHeaders = __spreadProps(__spreadValues({}, headers), {
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
             "Referer": playerUrl,
             "X-Requested-With": "XMLHttpRequest"
@@ -143,19 +138,11 @@ var require_extractor = __commonJS({
               if (!sData || !sData.u)
                 continue;
               let videoUrl = sData.u;
+              let finalHeaders = { "User-Agent": UA, "Referer": host + "/" };
               if (sData.sig) {
-                const proxyUrl = `${host}/p.php?url=${encodeURIComponent(videoUrl)}&sig=${sData.sig}`;
-                const proxyRes = yield fetch(proxyUrl, {
-                  method: "GET",
-                  headers: __spreadProps(__spreadValues({}, stealthHeaders), { "Cookie": cookie }),
-                  redirect: "manual"
-                });
-                const location = proxyRes.headers.get("location");
-                if (location) {
-                  videoUrl = location;
-                } else {
-                  videoUrl = proxyUrl;
-                }
+                videoUrl = `${host}/p.php?url=${encodeURIComponent(videoUrl)}&sig=${sData.sig}`;
+                if (cookie)
+                  finalHeaders["Cookie"] = cookie;
               } else if (videoUrl.startsWith("/")) {
                 videoUrl = host + videoUrl;
               }
@@ -166,12 +153,7 @@ var require_extractor = __commonJS({
                 url: videoUrl,
                 quality: "1080p \u2705",
                 language: "Latino",
-                headers: {
-                  "User-Agent": UA,
-                  "Referer": host + "/",
-                  "Cookie": cookie,
-                  "sec-ch-ua-platform": '"Android"'
-                }
+                headers: finalHeaders
               });
             } catch (e) {
             }
