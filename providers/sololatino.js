@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T18:12:44.968Z
+ * Generado: 2026-04-27T20:13:34.479Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -89,7 +89,7 @@ var require_extractor = __commonJS({
       return __async(this, null, function* () {
         var _a;
         try {
-          console.log(`[SoloLatino] Unified v2.6.4: ${mediaType} ID:${tmdbId}`);
+          console.log(`[SoloLatino] Shielded v2.6.5: ${mediaType} ID:${tmdbId}`);
           let imdbId = tmdbId;
           if (!String(tmdbId).startsWith("tt")) {
             imdbId = yield tmdb.getImdbId(tmdbId, mediaType);
@@ -158,12 +158,19 @@ var require_extractor = __commonJS({
                 videoUrl += videoUrl.includes("?") ? "&ext=.m3u8" : "?.m3u8";
               }
               videoUrl += "#.m3u8";
+              const finalHeaders = {
+                "User-Agent": NUVIO_UA,
+                "Referer": host + "/",
+                "Origin": host
+              };
+              if (cookie)
+                finalHeaders["Cookie"] = cookie;
               streams.push({
                 name: `SoloLatino - ${srv[0].replace(/🎬|🚀|✅/gu, "").trim()}`,
                 url: videoUrl,
                 quality: "1080p \u2705",
-                language: "Latino"
-                // No enviamos headers al resultado para que Nuvio use su propia identidad nativa (que ya clonamos)
+                language: "Latino",
+                headers: finalHeaders
               });
             } catch (e) {
             }
