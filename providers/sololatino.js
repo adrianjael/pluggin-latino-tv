@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T17:27:26.748Z
+ * Generado: 2026-04-27T17:31:22.851Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -116,7 +116,7 @@ var require_extractor = __commonJS({
       return __async(this, null, function* () {
         var _a;
         try {
-          console.log(`[SoloLatino] B\xFAsqueda v2.5.3: ${mediaType} ID:${tmdbId}`);
+          console.log(`[SoloLatino] B\xFAsqueda v2.5.4: ${mediaType} ID:${tmdbId}`);
           let imdbId = tmdbId;
           if (!String(tmdbId).startsWith("tt")) {
             imdbId = yield tmdb.getImdbId(tmdbId, mediaType);
@@ -168,18 +168,23 @@ var require_extractor = __commonJS({
               if (!sData || !sData.u)
                 continue;
               let finalUrl = sData.u;
-              const isVidHide = finalUrl.includes("masukestin.com") || finalUrl.includes("minochinos.com") || finalUrl.includes("vidhide.com");
-              const isM3U8 = finalUrl.includes(".m3u8");
-              if (isVidHide && !isM3U8) {
-                const embedRes = yield fetch(finalUrl, { headers: { "User-Agent": UA, "Referer": host } });
-                if (embedRes.ok) {
-                  const embedHtml = yield embedRes.text();
-                  const packedMatch = embedHtml.match(/eval\(function\(p,a,c,k,e,[rd]\)[\s\S]*?\.split\('\|'\)[^\)]*\)\)/);
-                  if (packedMatch) {
-                    const unpacked = unpackVidHide(packedMatch[0]);
-                    const hlsMatch = unpacked ? unpacked.match(/"hls[24]"\s*:\s*"([^"]+)"/) : null;
-                    if (hlsMatch)
-                      finalUrl = hlsMatch[1];
+              if (sData.sig && finalUrl.includes("cloudwindow-route.com")) {
+                finalUrl = sData.u;
+                if (!finalUrl.includes("referer=")) {
+                  finalUrl += (finalUrl.includes("?") ? "&" : "?") + "referer=sololatino.net";
+                }
+              } else if (finalUrl.includes("masukestin.com") || finalUrl.includes("minochinos.com") || finalUrl.includes("vidhide.com")) {
+                if (!finalUrl.includes(".m3u8")) {
+                  const embedRes = yield fetch(finalUrl, { headers: { "User-Agent": UA, "Referer": host } });
+                  if (embedRes.ok) {
+                    const embedHtml = yield embedRes.text();
+                    const packedMatch = embedHtml.match(/eval\(function\(p,a,c,k,e,[rd]\)[\s\S]*?\.split\('\|'\)[^\)]*\)\)/);
+                    if (packedMatch) {
+                      const unpacked = unpackVidHide(packedMatch[0]);
+                      const hlsMatch = unpacked ? unpacked.match(/"hls[24]"\s*:\s*"([^"]+)"/) : null;
+                      if (hlsMatch)
+                        finalUrl = hlsMatch[1];
+                    }
                   }
                 }
               } else if (sData.sig) {
@@ -191,8 +196,8 @@ var require_extractor = __commonJS({
                 finalUrl += "#.mp4";
               const resultHeaders = {
                 "User-Agent": UA,
-                "Referer": finalUrl,
-                // AUTO-REFERER: La URL completa del video (Solución 403)
+                "Referer": host + "/",
+                // Referer a la raíz del reproductor para mayor compatibilidad
                 "Origin": host,
                 "sec-ch-ua-platform": '"Android"',
                 "sec-ch-ua-mobile": "?1",
