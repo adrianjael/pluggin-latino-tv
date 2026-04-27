@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T20:48:35.516Z
+ * Generado: 2026-04-27T20:57:38.608Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -89,7 +89,7 @@ var require_extractor = __commonJS({
       return __async(this, null, function* () {
         var _a;
         try {
-          console.log(`[SoloLatino] Anchor v2.7.4: ${mediaType} ID:${tmdbId}`);
+          console.log(`[SoloLatino] DataURI v2.7.5: ${mediaType} ID:${tmdbId}`);
           let imdbId = tmdbId;
           if (!String(tmdbId).startsWith("tt")) {
             imdbId = yield tmdb.getImdbId(tmdbId, mediaType);
@@ -155,21 +155,53 @@ var require_extractor = __commonJS({
                 const apiData = yield apiRes.json();
                 if (apiData.success && apiData.data && apiData.data.length > 0) {
                   videoUrl = apiData.data[apiData.data.length - 1].file;
+                  streams.push({
+                    name: `SoloLatino - ${srv[0].replace(/🎬|🚀|✅/gu, "").trim()}`,
+                    url: videoUrl,
+                    quality: "1080p \u2705",
+                    language: "Latino",
+                    headers: masterHeaders
+                  });
                 }
               } else if (sData.sig) {
-                let proxyUrl = `${host}/p.php?url=${encodeURIComponent(videoUrl)}&sig=${sData.sig}`;
-                if (sData.src)
-                  proxyUrl += `&src=${sData.src}`;
-                videoUrl = proxyUrl + "#.m3u8";
+                let proxyUrl = videoUrl;
+                if (!videoUrl.startsWith("http")) {
+                  proxyUrl = `${host}${videoUrl}`;
+                } else if (videoUrl.includes("minochinos") || videoUrl.includes("cloudwindow")) {
+                  proxyUrl = `${host}/p.php?url=${encodeURIComponent(videoUrl)}&sig=${sData.sig}`;
+                  if (sData.src)
+                    proxyUrl += `&src=${sData.src}`;
+                }
+                const masterRes = yield fetch(proxyUrl, { headers: masterHeaders });
+                if (!masterRes.ok)
+                  continue;
+                const masterM3u8 = yield masterRes.text();
+                const lines = masterM3u8.split("\n");
+                let bestSubM3u8Url = "";
+                for (let i = 0; i < lines.length; i++) {
+                  if (lines[i].startsWith("#EXT-X-STREAM-INF") && i + 1 < lines.length && lines[i + 1].startsWith("http")) {
+                    bestSubM3u8Url = lines[i + 1].trim();
+                  }
+                }
+                if (!bestSubM3u8Url) {
+                  const base64Master = Buffer.from(masterM3u8).toString("base64");
+                  videoUrl = `data:application/vnd.apple.mpegurl;base64,${base64Master}`;
+                } else {
+                  const subRes = yield fetch(bestSubM3u8Url, { headers: masterHeaders });
+                  if (!subRes.ok)
+                    continue;
+                  const subM3u8 = yield subRes.text();
+                  const base64Sub = Buffer.from(subM3u8).toString("base64");
+                  videoUrl = `data:application/vnd.apple.mpegurl;base64,${base64Sub}`;
+                }
+                streams.push({
+                  name: `SoloLatino - ${srv[0].replace(/🎬|🚀|✅/gu, "").trim()}`,
+                  url: videoUrl,
+                  quality: "1080p \u2705",
+                  language: "Latino",
+                  headers: masterHeaders
+                });
               }
-              streams.push({
-                name: `SoloLatino - ${srv[0].replace(/🎬|🚀|✅/gu, "").trim()}`,
-                url: videoUrl,
-                quality: "1080p \u2705",
-                language: "Latino",
-                headers: masterHeaders
-                // ExoPlayer inyectará esto en el DataSourceFactory
-              });
             } catch (e) {
             }
           }
