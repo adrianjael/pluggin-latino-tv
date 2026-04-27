@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T15:42:31.611Z
+ * Generado: 2026-04-27T15:55:54.201Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -694,40 +694,24 @@ var require_extractor = __commonJS({
               }
               const isProxy = embedUrl.includes("p.php?url=");
               const isInternal = embedUrl.startsWith("/p.php?v=");
-              let finalStream = null;
+              let finalUrl = srvData.u;
               const isDirectM3u8 = srvData.u.includes(".m3u8");
-              if (isDirectM3u8) {
-                console.log(`[SoloLatino] Enlace directo detectado para ${srv[0]}`);
-                const origin = new URL(srvData.u).origin;
-                finalStream = {
-                  url: srvData.u,
-                  quality: "1080p \u2705",
-                  headers: { "Referer": `${origin}/` }
-                };
-              } else {
-                const res = yield resolvers.resolve(srv[0], srvData.u);
-                if (res && res.url) {
-                  finalStream = {
-                    url: res.url,
-                    quality: `${res.quality || "1080p"} \u2705`,
-                    headers: res.headers
-                  };
-                }
+              if (isInternal) {
+                finalUrl = `${host}${embedUrl}`;
+              } else if (srvData.sig && !isDirectM3u8) {
+                finalUrl = `${host}/p.php?url=${encodeURIComponent(srvData.u)}&sig=${srvData.sig}`;
               }
-              if (finalStream) {
-                const formatServer = (name) => {
-                  if (!name)
-                    return "Unknown";
-                  return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
-                };
-                streams.push({
-                  name: `SoloLatino - ${formatServer(srv[0])}`,
-                  url: finalStream.url,
-                  quality: finalStream.quality,
-                  language: "Latino",
-                  headers: finalStream.headers
-                });
-              }
+              const formatServer = (name) => {
+                if (!name)
+                  return "Unknown";
+                return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+              };
+              streams.push({
+                name: `SoloLatino - ${formatServer(srv[0])}`,
+                url: finalUrl,
+                quality: "1080p \u2705",
+                language: "Latino"
+              });
             } catch (e) {
             }
           }
