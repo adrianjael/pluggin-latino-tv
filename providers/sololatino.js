@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T16:26:08.209Z
+ * Generado: 2026-04-27T16:30:08.293Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -136,45 +136,47 @@ var require_extractor = __commonJS({
           const listData = yield listRes.json();
           if (!listData || !listData.langs_s)
             return [];
-          for (const langName in listData.langs_s) {
-            const servers = listData.langs_s[langName];
-            for (const srv of servers) {
-              try {
-                const sResponse = yield fetch(`${host}/s.php`, {
-                  method: "POST",
-                  headers: __spreadProps(__spreadValues({}, commonHeaders), { "Origin": host }),
-                  body: `a=2&v=${srv[1]}&tok=${token}`
-                });
-                const sData = yield sResponse.json();
-                if (!sData || !sData.u)
-                  continue;
-                let finalUrl = sData.u;
-                if (sData.sig) {
-                  finalUrl = `${host}/p.php?url=${encodeURIComponent(sData.u)}&sig=${sData.sig}`;
-                } else if (finalUrl.startsWith("/")) {
-                  finalUrl = host + finalUrl;
-                }
-                if (!finalUrl.includes(".m3u8") && !finalUrl.includes(".mp4")) {
-                  finalUrl += "#.mp4";
-                }
-                const formatServer = (name) => {
-                  if (!name)
-                    return "Unknown";
-                  return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
-                };
-                streams.push({
-                  name: `SoloLatino - ${formatServer(srv[0])}`,
-                  url: finalUrl,
-                  quality: "1080p \u2705",
-                  language: langName === "LAT" ? "Latino" : langName === "ESP" ? "Castellano" : "Subtitulado",
-                  headers: {
-                    "User-Agent": UA,
-                    "Referer": host + "/",
-                    "Origin": host
-                  }
-                });
-              } catch (e) {
+          const latServers = listData.langs_s.LAT || listData.s || [];
+          for (const srv of latServers) {
+            try {
+              const sResponse = yield fetch(`${host}/s.php`, {
+                method: "POST",
+                headers: __spreadProps(__spreadValues({}, commonHeaders), { "Origin": host }),
+                body: `a=2&v=${srv[1]}&tok=${token}`
+              });
+              const sData = yield sResponse.json();
+              if (!sData || !sData.u)
+                continue;
+              let videoUrl = sData.u;
+              let finalUrl = videoUrl;
+              if (sData.sig) {
+                finalUrl = `${host}/p.php?url=${encodeURIComponent(videoUrl)}&sig=${sData.sig}`;
+              } else if (videoUrl.startsWith("/")) {
+                finalUrl = host + videoUrl;
               }
+              if (!finalUrl.includes(".m3u8") && !finalUrl.includes(".mp4")) {
+                finalUrl += "#.mp4";
+              }
+              const formatServer = (name) => {
+                if (!name)
+                  return "Unknown";
+                let cleanName = name.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2700}-\u{27BF}]|[\u{E000}-\u{F8FF}]|\u{D83C}[\u{DC00}-\u{DFFF}]|\u{D83D}[\u{DC00}-\u{DFFF}]|[\u{2011}-\u{26FF}]|\u{D83E}[\u{DC00}-\u{DFFF}]/gu, "").trim();
+                if (cleanName.includes("Player+"))
+                  return "Mediafire Directo \u{1F680}";
+                return cleanName;
+              };
+              streams.push({
+                name: `SoloLatino - ${formatServer(srv[0])}`,
+                url: finalUrl,
+                quality: "1080p \u2705",
+                language: "Latino",
+                headers: {
+                  "User-Agent": UA,
+                  "Referer": host + "/",
+                  "Origin": host
+                }
+              });
+            } catch (e) {
             }
           }
           return streams;
