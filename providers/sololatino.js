@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T14:44:51.861Z
+ * Generado: 2026-04-27T14:59:55.793Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -45,6 +45,38 @@ var __async = (__this, __arguments, generator) => {
     step((generator = generator.apply(__this, __arguments)).next());
   });
 };
+
+// src/shared/utils/tmdb.js
+var require_tmdb = __commonJS({
+  "src/shared/utils/tmdb.js"(exports2, module2) {
+    function getTmdbApiKey() {
+      const settings = typeof globalThis !== "undefined" && globalThis.SCRAPER_SETTINGS || {};
+      const appKey = settings.tmdb_api_key || settings.tmdbApiKey || (typeof TMDB_API_KEY !== "undefined" ? TMDB_API_KEY : null);
+      return appKey || "439c478a771f35c05022f9feabcca01c";
+    }
+    function getImdbId(tmdbId, mediaType) {
+      return __async(this, null, function* () {
+        try {
+          const type = String(mediaType || "").toLowerCase().includes("movie") ? "movie" : "tv";
+          const apiKey = getTmdbApiKey();
+          const url = `https://api.themoviedb.org/3/${type}/${tmdbId}/external_ids?api_key=${apiKey}`;
+          console.log(`[TMDB] Consultando (${type}): ${tmdbId} usando API Key: ${apiKey.substring(0, 4)}...`);
+          const response = yield fetch(url, {
+            headers: {
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            }
+          });
+          const data = yield response.json();
+          return data.imdb_id || null;
+        } catch (e) {
+          console.error("[TMDB] Error obteniendo IMDB ID:", e.message);
+          return null;
+        }
+      });
+    }
+    module2.exports = { getImdbId };
+  }
+});
 
 // src/shared/utils/unpacker.js
 var require_unpacker = __commonJS({
@@ -576,28 +608,32 @@ var require_resolvers = __commonJS({
 // src/sololatino/extractor.js
 var require_extractor = __commonJS({
   "src/sololatino/extractor.js"(exports2, module2) {
+    var tmdb = require_tmdb();
+    var resolvers = require_resolvers();
     var host = "https://player.pelisserieshoy.com";
-    var referer = "https://sololatino.net/";
-    var DEFAULT_TMDB_KEY = "439c478a771f35c05022f9feabcca01c";
+    var refererBase = "https://sololatino.net/";
     function getStreams2(tmdbId, mediaType, season, episode) {
       return __async(this, null, function* () {
         try {
-          console.log(`[SoloLatino] Iniciando extracci\xF3n: ${mediaType} ID:${tmdbId}`);
-          const imdbId = yield getImdbId(tmdbId, mediaType);
-          if (!imdbId) {
-            console.log("[SoloLatino] No se pudo obtener el IMDB ID");
-            return [];
+          console.log(`[SoloLatino] B\xFAsqueda sigilosa: ${mediaType} ID:${tmdbId}`);
+          let imdbId = tmdbId;
+          if (!String(tmdbId).startsWith("tt")) {
+            imdbId = yield tmdb.getImdbId(tmdbId, mediaType);
           }
+          if (!imdbId)
+            return [];
           const isMovie = mediaType === "movie";
-          const epStr = episode < 10 ? `0${episode}` : episode;
-          const slug = isMovie ? imdbId : `${imdbId}-${season}x${epStr}`;
+          const ep = String(episode || 1).padStart(2, "0");
+          const slug = isMovie ? imdbId : `${imdbId}-${season || 1}x${ep}`;
           const playerUrl = `${host}/f/${slug}`;
-          console.log(`[SoloLatino] Cargando reproductor: ${playerUrl}`);
+          const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
           const headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Referer": referer,
+            "User-Agent": UA,
+            "Referer": refererBase,
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-            "Accept-Language": "es-MX,es;q=0.9,en;q=0.8"
+            "Accept-Language": "es-MX,es;q=0.9,en;q=0.8",
+            "Cache-Control": "no-cache",
+            "Pragma": "no-cache"
           };
           const response = yield fetch(playerUrl, { headers });
           if (!response.ok)
@@ -605,12 +641,9 @@ var require_extractor = __commonJS({
           const html = yield response.text();
           const cookie = response.headers.get("set-cookie") || "";
           const tokenMatch = html.match(/(?:let\s+token|const\s+_t|tok|_t|token)\s*.*['"]([a-f0-9]{32})['"]/);
-          if (!tokenMatch) {
-            console.log("[SoloLatino] Token no encontrado");
+          if (!tokenMatch)
             return [];
-          }
           const token = tokenMatch[1];
-          console.log(`[SoloLatino] Token obtenido: ${token.substring(0, 8)}...`);
           const postHeaders = __spreadProps(__spreadValues({}, headers), {
             "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
             "Referer": playerUrl,
@@ -623,26 +656,33 @@ var require_extractor = __commonJS({
             body: `a=click&tok=${token}`,
             headers: postHeaders
           });
+          if (typeof process !== "undefined")
+            yield new Promise((r) => setTimeout(r, 1e3));
           const scanRes = yield fetch(`${host}/s.php`, {
             method: "POST",
             body: `a=1&tok=${token}`,
             headers: postHeaders
           });
+          if (!scanRes.ok)
+            return [];
           const scanData = yield scanRes.json();
-          const servers = [];
+          let rawServers = [];
           if (scanData.langs_s && scanData.langs_s.LAT) {
-            scanData.langs_s.LAT.forEach((s) => servers.push({ name: s[0], id: s[1] }));
+            rawServers = scanData.langs_s.LAT;
           } else if (scanData.s) {
-            scanData.s.forEach((s) => servers.push({ name: s[0], id: s[1] }));
+            rawServers = scanData.s;
           }
-          console.log(`[SoloLatino] Servidores encontrados: ${servers.length}`);
+          if (rawServers.length === 0)
+            return [];
           const streams = [];
-          const resolvers = require_resolvers();
-          for (const srv of servers.slice(0, 5)) {
+          const topServers = rawServers.slice(0, 3);
+          for (const srv of topServers) {
             try {
+              if (typeof process !== "undefined")
+                yield new Promise((r) => setTimeout(r, 1200));
               const srvRes = yield fetch(`${host}/s.php`, {
                 method: "POST",
-                body: `a=2&v=${srv.id}&tok=${token}`,
+                body: `a=2&v=${srv[1]}&tok=${token}`,
                 headers: postHeaders
               });
               const srvData = yield srvRes.json();
@@ -652,41 +692,42 @@ var require_extractor = __commonJS({
               if (srvData.sig) {
                 embedUrl = `${host}/p.php?url=${encodeURIComponent(srvData.u)}&sig=${srvData.sig}`;
               }
-              console.log(`[SoloLatino] Resolviendo: ${srv.name}`);
-              const res = yield resolvers.resolve(srv.name, embedUrl);
-              if (res && res.url) {
+              const isProxy = embedUrl.includes("p.php?url=");
+              const isInternal = embedUrl.startsWith("/p.php?v=");
+              if (isProxy || isInternal) {
+                const fullUrl = isInternal ? `${host}${embedUrl}` : embedUrl;
+                let realSrv = srv[0];
+                if (fullUrl.includes("minochinos") || fullUrl.includes("masukestin"))
+                  realSrv = "VidHide";
+                else if (fullUrl.includes("r66nv9ed"))
+                  realSrv = "Filemoon";
+                else if (fullUrl.includes("cloudwindow"))
+                  realSrv = "VOE";
                 streams.push({
-                  name: `SoloLatino - ${srv.name.toUpperCase()}`,
-                  url: res.url,
-                  quality: res.verified ? `${res.quality} \u2705` : res.quality,
+                  name: `SoloLatino - ${realSrv.toUpperCase()}`,
+                  url: fullUrl,
+                  quality: "1080p \u2705",
                   language: "Latino",
-                  headers: res.headers || { "Referer": host + "/" }
+                  headers: { "Referer": host + "/", "User-Agent": UA }
                 });
+              } else {
+                const res = yield resolvers.resolve(srv[0], embedUrl);
+                if (res && res.url) {
+                  streams.push({
+                    name: `SoloLatino - ${srv[0].toUpperCase()}`,
+                    url: res.url,
+                    quality: `${res.quality || "1080p"} \u2705`,
+                    language: "Latino",
+                    headers: res.headers || { "Referer": host + "/" }
+                  });
+                }
               }
             } catch (e) {
-              console.log(`[SoloLatino] Error en servidor ${srv.name}: ${e.message}`);
             }
           }
           return streams;
         } catch (error) {
-          console.error(`[SoloLatino] Error Cr\xEDtico: ${error.message}`);
           return [];
-        }
-      });
-    }
-    function getImdbId(tmdbId, mediaType) {
-      return __async(this, null, function* () {
-        try {
-          const type = mediaType === "movie" || mediaType === "movies" ? "movie" : "tv";
-          const apiKey = globalThis.SCRAPER_SETTINGS && globalThis.SCRAPER_SETTINGS.tmdb_api_key || globalThis.TMDB_API_KEY || DEFAULT_TMDB_KEY;
-          const url = `https://api.themoviedb.org/3/${type}/${tmdbId}/external_ids?api_key=${apiKey}`;
-          const res = yield fetch(url);
-          if (!res.ok)
-            return null;
-          const data = yield res.json();
-          return data.imdb_id || null;
-        } catch (e) {
-          return null;
         }
       });
     }
