@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-27T22:40:17.642Z
+ * Generado: 2026-04-27T22:55:14.891Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
