@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T17:47:01.560Z
+ * Generado: 2026-04-27T17:49:55.029Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -116,7 +116,7 @@ var require_extractor = __commonJS({
       return __async(this, null, function* () {
         var _a;
         try {
-          console.log(`[SoloLatino] B\xFAsqueda v2.5.8: ${mediaType} ID:${tmdbId}`);
+          console.log(`[SoloLatino] B\xFAsqueda v2.5.9: ${mediaType} ID:${tmdbId}`);
           let imdbId = tmdbId;
           if (!String(tmdbId).startsWith("tt")) {
             imdbId = yield tmdb.getImdbId(tmdbId, mediaType);
@@ -170,29 +170,22 @@ var require_extractor = __commonJS({
               if (!sData || !sData.u)
                 continue;
               let finalUrl = sData.u;
-              const isCloudwindow = finalUrl.includes("cloudwindow-route.com") || finalUrl.includes("cloud-route.com");
-              const isVidHide = finalUrl.includes("masukestin.com") || finalUrl.includes("minochinos.com") || finalUrl.includes("vidhide.com");
-              if (isCloudwindow || isVidHide) {
-                let embedUrl = finalUrl;
-                if (finalUrl.includes("/engine/")) {
-                  const parts = finalUrl.split("/");
-                  const id = parts[parts.length - 2];
-                  const domain = new URL(finalUrl).hostname;
-                  embedUrl = `https://${domain}/v/${id}`;
-                }
-                const embedRes = yield fetch(embedUrl, { headers: { "User-Agent": UA, "Referer": host } });
-                if (embedRes.ok) {
-                  const embedHtml = yield embedRes.text();
-                  const packedMatch = embedHtml.match(/eval\(function\(p,a,c,k,e,[rd]\)[\s\S]*?\.split\('\|'\)[^\)]*\)\)/);
-                  if (packedMatch) {
-                    const unpacked = unpackVidHide(packedMatch[0]);
-                    const hlsMatch = unpacked ? unpacked.match(/"hls[24]"\s*:\s*"([^"]+)"/) : null;
-                    if (hlsMatch) {
-                      finalUrl = hlsMatch[1];
-                      finalUrl += (finalUrl.includes("?") ? "&" : "?") + "referer=embed69.org";
+              const isVIP = finalUrl.includes("cloudwindow-route.com") || finalUrl.includes("cloud-route.com") || finalUrl.includes("masukestin.com") || finalUrl.includes("minochinos.com") || finalUrl.includes("vidhide.com");
+              if (isVIP) {
+                if (!finalUrl.includes(".m3u8")) {
+                  const embedRes = yield fetch(finalUrl, { headers: { "User-Agent": UA, "Referer": host } });
+                  if (embedRes.ok) {
+                    const embedHtml = yield embedRes.text();
+                    const packedMatch = embedHtml.match(/eval\(function\(p,a,c,k,e,[rd]\)[\s\S]*?\.split\('\|'\)[^\)]*\)\)/);
+                    if (packedMatch) {
+                      const unpacked = unpackVidHide(packedMatch[0]);
+                      const hlsMatch = unpacked ? unpacked.match(/"hls[24]"\s*:\s*"([^"]+)"/) : null;
+                      if (hlsMatch)
+                        finalUrl = hlsMatch[1];
                     }
                   }
                 }
+                finalUrl += (finalUrl.includes("?") ? "&" : "?") + "referer=embed69.org";
               } else if (sData.sig) {
                 finalUrl = `${host}/p.php?url=${encodeURIComponent(finalUrl)}&sig=${sData.sig}`;
               } else if (finalUrl.startsWith("/")) {
@@ -202,11 +195,12 @@ var require_extractor = __commonJS({
                 finalUrl += "#.mp4";
               const resultHeaders = {
                 "User-Agent": UA,
-                "Referer": "https://embed69.org/",
-                // Referer neutro que aceptan la mayoría de CDNs
-                "Origin": "https://embed69.org",
+                "Referer": host + "/",
+                // Referer oficial de PelisSeriesHoy
+                "Origin": host,
                 "Cookie": cookie,
-                "sec-ch-ua-platform": '"Android"'
+                "sec-ch-ua-platform": '"Android"',
+                "Range": "bytes=0-"
               };
               streams.push({
                 name: `SoloLatino - ${srv[0].replace(/🎬|🚀|✅/gu, "").trim()}`,
