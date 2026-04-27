@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T17:04:48.676Z
+ * Generado: 2026-04-27T17:09:04.478Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -84,7 +84,7 @@ var require_extractor = __commonJS({
     var tmdb = require_tmdb();
     var host = "https://player.pelisserieshoy.com";
     var refererBase = "https://sololatino.net/";
-    var UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36";
+    var UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
     function unpackVidHide(script) {
       try {
         const match = script.match(/eval\(function\(p,a,c,k,e,[rd]\)\{.*?\}\s*\('([\s\S]*?)',\s*(\d+),\s*(\d+),\s*'([\s\S]*?)'\.split\('\|'\)/);
@@ -116,7 +116,7 @@ var require_extractor = __commonJS({
       return __async(this, null, function* () {
         var _a;
         try {
-          console.log(`[SoloLatino] B\xFAsqueda v2.4.9: ${mediaType} ID:${tmdbId}`);
+          console.log(`[SoloLatino] B\xFAsqueda v2.5.0: ${mediaType} ID:${tmdbId}`);
           let imdbId = tmdbId;
           if (!String(tmdbId).startsWith("tt")) {
             imdbId = yield tmdb.getImdbId(tmdbId, mediaType);
@@ -127,13 +127,9 @@ var require_extractor = __commonJS({
           const ep = String(episode || 1).padStart(2, "0");
           const slug = isMovie ? imdbId : `${imdbId}-${season || 1}x${ep}`;
           const playerUrl = `${host}/f/${slug}`;
-          const stealthHeaders = {
-            "User-Agent": UA,
-            "Referer": refererBase,
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-            "Accept-Language": "es-MX,es;q=0.9,en;q=0.8"
-          };
-          const response = yield fetch(playerUrl, { headers: stealthHeaders });
+          const response = yield fetch(playerUrl, {
+            headers: { "User-Agent": UA, "Referer": refererBase }
+          });
           if (!response.ok)
             return [];
           const html = yield response.text();
@@ -151,10 +147,17 @@ var require_extractor = __commonJS({
           };
           if (cookie)
             commonHeaders["Cookie"] = cookie;
-          yield fetch(`${host}/s.php`, { method: "POST", headers: commonHeaders, body: `a=click&tok=${token}` }).catch(() => {
+          yield fetch(`${host}/s.php`, {
+            method: "POST",
+            headers: commonHeaders,
+            body: `a=click&tok=${token}`
+          }).catch(() => {
           });
-          yield new Promise((r) => setTimeout(r, 1200));
-          const listRes = yield fetch(`${host}/s.php`, { method: "POST", headers: commonHeaders, body: `a=1&tok=${token}` });
+          const listRes = yield fetch(`${host}/s.php`, {
+            method: "POST",
+            headers: commonHeaders,
+            body: `a=1&tok=${token}`
+          });
           const listData = yield listRes.json();
           const latServers = ((_a = listData.langs_s) == null ? void 0 : _a.LAT) || listData.s || [];
           const streams = [];
@@ -169,7 +172,7 @@ var require_extractor = __commonJS({
               if (!sData || !sData.u)
                 continue;
               let finalUrl = sData.u;
-              let resultHeaders = { "User-Agent": UA, "Referer": playerUrl, "Origin": host };
+              let resultHeaders = { "User-Agent": UA, "Referer": playerUrl };
               const isDirectServer = finalUrl.includes("masukestin.com") || finalUrl.includes("minochinos.com") || finalUrl.includes("vidhide.com");
               if (isDirectServer) {
                 const embedRes = yield fetch(finalUrl, { headers: { "User-Agent": UA, "Referer": host } });
@@ -181,6 +184,7 @@ var require_extractor = __commonJS({
                     const hlsMatch = unpacked ? unpacked.match(/"hls[24]"\s*:\s*"([^"]+)"/) : null;
                     if (hlsMatch) {
                       finalUrl = hlsMatch[1];
+                      finalUrl += (finalUrl.includes("?") ? "&" : "?") + "referer=sololatino.net";
                       resultHeaders.Referer = new URL(sData.u).origin + "/";
                     }
                   }
@@ -193,10 +197,10 @@ var require_extractor = __commonJS({
               if (!finalUrl.includes(".m3u8") && !finalUrl.includes(".mp4"))
                 finalUrl += "#.mp4";
               streams.push({
-                serverName: srv[0],
+                name: `SoloLatino - ${srv[0].replace(/🎬|🚀|✅/gu, "").trim()}`,
                 url: finalUrl,
-                quality: "1080p",
-                langLabel: "Latino",
+                quality: "1080p \u2705",
+                language: "Latino",
                 headers: resultHeaders
               });
             } catch (e) {
