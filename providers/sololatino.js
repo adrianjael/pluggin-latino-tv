@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T16:52:49.315Z
+ * Generado: 2026-04-27T16:55:11.940Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -116,8 +116,11 @@ var require_extractor = __commonJS({
           if (!response.ok)
             return [];
           const html = yield response.text();
-          const setCookie = response.headers.get("set-cookie") || "";
-          const cookie = setCookie.split(";")[0];
+          let cookie = "";
+          const setCookieHeader = response.headers.get("set-cookie");
+          if (setCookieHeader) {
+            cookie = setCookieHeader.split(",").map((c) => c.split(";")[0].trim()).join("; ");
+          }
           const tokenMatch = html.match(/(?:let\s+token|const\s+_t|tok|_t|token)\s*.*['"]([a-f0-9]{32})['"]/i);
           const token = tokenMatch ? tokenMatch[1] : "";
           if (!token)
