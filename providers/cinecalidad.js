@@ -1,6 +1,6 @@
 /**
  * cinecalidad - Plugin Nuvio
- * Generado: 2026-04-28T15:22:18.914Z
+ * Generado: 2026-04-28T15:36:59.283Z
  */
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __commonJS = (cb, mod) => function __require() {
@@ -442,7 +442,8 @@ var require_filemoon = __commonJS({
                 "User-Agent": USER_AGENT,
                 "Referer": url,
                 "Origin": `https://${hostname}`,
-                "X-Embed-Parent": url
+                "X-Embed-Parent": url,
+                "Accept": "application/json"
               }
             });
             if (response2.ok) {
@@ -614,8 +615,10 @@ var require_goodstream = __commonJS({
           const response = yield fetch(url, {
             headers: {
               "User-Agent": USER_AGENT,
-              "Referer": origin + "/",
-              "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+              "Referer": "https://www.cinecalidad.vg/",
+              "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+              "Accept-Language": "es-MX,es;q=0.9",
+              "Connection": "keep-alive"
             }
           });
           if (!response.ok)
@@ -642,10 +645,11 @@ var require_goodstream = __commonJS({
               quality: "1080p",
               verified: true,
               headers: {
-                "Referer": url,
+                "Referer": origin + "/",
                 "Origin": origin,
                 "User-Agent": USER_AGENT,
-                "Accept-Language": "es-MX,es;q=0.9"
+                "Accept": "*/*",
+                "Accept-Language": "es-MX,es;q=0.9,en;q=0.8"
               }
             };
           }

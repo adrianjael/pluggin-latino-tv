@@ -1,6 +1,6 @@
 /**
  * cinehdplus - Plugin Nuvio
- * Generado: 2026-04-28T15:22:18.948Z
+ * Generado: 2026-04-28T15:36:59.317Z
  */
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __commonJS = (cb, mod) => function __require() {
@@ -442,7 +442,8 @@ var require_filemoon = __commonJS({
                 "User-Agent": USER_AGENT,
                 "Referer": url,
                 "Origin": `https://${hostname}`,
-                "X-Embed-Parent": url
+                "X-Embed-Parent": url,
+                "Accept": "application/json"
               }
             });
             if (response2.ok) {
