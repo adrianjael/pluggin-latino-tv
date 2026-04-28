@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-28T15:54:00.402Z
+ * Generado: 2026-04-28T16:05:17.577Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -596,33 +596,33 @@ var require_streamtape = __commonJS({
 // src/shared/resolvers/goodstream.js
 var require_goodstream = __commonJS({
   "src/shared/resolvers/goodstream.js"(exports2, module2) {
-    var { unpack } = require_unpacker();
-    var USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+    var USER_AGENT = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36";
     function resolveGoodstream(url) {
       return __async(this, null, function* () {
         try {
-          console.log(`[Resolvers] Resolviendo GoodStream/Vimeos: ${url}`);
+          console.log(`[Resolvers] Resolviendo GoodStream (User-Headers Mode): ${url}`);
           const origin = new URL(url).origin;
           const response = yield fetch(url, {
             skipSizeCheck: true,
-            // v12.9.4: Evita HEAD invisibles que causan 403
             headers: {
-              "User-Agent": USER_AGENT,
-              "Referer": origin + "/",
-              "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-              "Accept-Language": "es-MX,es;q=0.9,en;q=0.8",
-              "Connection": "keep-alive",
-              "sec-ch-ua": '"Chromium";v="137", "Not-A.Brand";v="24", "Google Chrome";v="137"',
-              "sec-ch-ua-mobile": "?0",
-              "sec-ch-ua-platform": '"Windows"',
-              "Sec-Fetch-Dest": "document",
-              "Sec-Fetch-Mode": "navigate",
-              "Sec-Fetch-Site": "none",
-              "Sec-Fetch-User": "?1",
-              "Upgrade-Insecure-Requests": "1"
+              "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+              "accept-language": "es-ES,es;q=0.9",
+              "cache-control": "no-cache",
+              "pragma": "no-cache",
+              "priority": "u=0, i",
+              "sec-ch-ua": '"Google Chrome";v="147", "Not.A/Brand";v="8", "Chromium";v="147"',
+              "sec-ch-ua-mobile": "?1",
+              "sec-ch-ua-platform": '"Android"',
+              "sec-fetch-dest": "document",
+              "sec-fetch-mode": "navigate",
+              "sec-fetch-site": "cross-site",
+              "sec-fetch-user": "?1",
+              "upgrade-insecure-requests": "1",
+              "cookie": "aff=64; ref_url=cinecalidad.vg",
+              "Referer": "https://www.cinecalidad.vg/",
+              "User-Agent": USER_AGENT
             }
           });
-          console.log(`[GoodStream] Status: ${response.status}`);
           if (!response.ok)
             return null;
           const html = yield response.text();
@@ -631,28 +631,19 @@ var require_goodstream = __commonJS({
           if (fileMatch) {
             videoUrl = fileMatch[1];
           }
-          if (!videoUrl) {
-            const evalMatch = html.match(/eval\(function\(p,a,c,k,e,[rd]\)[\s\S]*?\.split\('\|'\)[^\)]*\)\)/);
-            if (evalMatch) {
-              const unpacked = unpack(evalMatch[0]);
-              const innerMatch = unpacked.match(/(?:file|source|src)\s*:\s*["']([^"']+\.(?:m3u8|mp4)[^"']*)["']/i);
-              if (innerMatch)
-                videoUrl = innerMatch[1];
-            }
-          }
           if (videoUrl) {
-            console.log(`[Resolvers] GoodStream Success! URL: ${videoUrl.substring(0, 50)}...`);
+            console.log(`[Resolvers] GoodStream Success!`);
             return {
               url: videoUrl,
               quality: "1080p",
               verified: true,
               headers: {
-                "Referer": url,
-                "Origin": origin,
+                "sec-ch-ua": '"Google Chrome";v="147", "Not.A/Brand";v="8", "Chromium";v="147"',
+                "sec-ch-ua-mobile": "?1",
+                "sec-ch-ua-platform": '"Android"',
+                "Referer": origin + "/",
                 "User-Agent": USER_AGENT,
-                "Accept-Language": "es-MX,es;q=0.9",
                 "skipSizeCheck": "true"
-                // También para el reproductor
               }
             };
           }

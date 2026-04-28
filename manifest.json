@@ -1,6 +1,6 @@
 {
     "name": "Latino - AdrianJael",
-    "version": "2.9.1",
+    "version": "2.9.3",
     "scrapers": [
         {
             "id": "embed69",
@@ -48,7 +48,7 @@
             "id": "cinecalidad",
             "name": "CineCalidad",
             "description": "Películas Latino - Alta Calidad (Voe, StreamWish, Filemoon)",
-            "version": "1.0.6",
+            "version": "1.0.8",
             "author": "AdrianJael",
             "supportedTypes": [
                 "movie"
