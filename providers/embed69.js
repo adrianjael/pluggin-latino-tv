@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-28T16:51:14.914Z
+ * Generado: 2026-04-28T19:59:53.584Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -919,7 +919,6 @@ var require_extractor = __commonJS({
     var http = require_http();
     var resolvers = require_resolvers();
     var tmdb = require_tmdb();
-    var { base64Decode } = require_base64();
     function decodeJwtPayload(token) {
       try {
         const parts = token.split(".");
@@ -927,7 +926,7 @@ var require_extractor = __commonJS({
           return null;
         const base64Url = parts[1];
         const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-        const jsonPayload = base64Decode(base64);
+        const jsonPayload = atob(base64);
         return JSON.parse(jsonPayload);
       } catch (e) {
         return null;
@@ -936,25 +935,25 @@ var require_extractor = __commonJS({
     var extractor2 = {
       getLinks(id, type, season, episode) {
         return __async(this, null, function* () {
-          let imdbId = id;
-          if (!String(id).startsWith("tt")) {
-            imdbId = yield tmdb.getImdbId(id, type);
-          }
-          if (!imdbId)
-            return [];
-          let urlId = imdbId;
-          if (type === "tv" && season && episode) {
-            const ep = String(episode).padStart(2, "0");
-            urlId = `${imdbId}-${season}x${ep}`;
-          }
-          const url = `https://embed69.org/f/${urlId}`;
-          console.log(`[Embed69] Navegando a: ${url}`);
           try {
+            let imdbId = id;
+            if (!String(id).startsWith("tt")) {
+              imdbId = yield tmdb.getImdbId(id, type);
+            }
+            if (!imdbId)
+              return [];
+            let urlId = imdbId;
+            if (type === "tv" && season && episode) {
+              const ep = String(episode).padStart(2, "0");
+              urlId = `${imdbId}-${season}x${ep}`;
+            }
+            const url = `https://embed69.org/f/${urlId}`;
+            console.log(`[Embed69] Buscando en: ${url}`);
             const response = yield http.get(url);
             const html = String(response);
             const match = html.match(/(?:let|const|var)\s+dataLink\s*=\s*([\[\{][\s\S]*?[\]\}]);/);
             if (!match) {
-              console.log("[Embed69] Error: dataLink no encontrado en el HTML.");
+              console.log("[Embed69] Error: dataLink no encontrado.");
               return [];
             }
             let dataLinkJson = JSON.parse(match[1]);
@@ -965,48 +964,39 @@ var require_extractor = __commonJS({
               }));
             }
             const allResults = [];
-            const LANG_MAP = {
-              "LAT": "Latino",
-              "ESP": "Castellano",
-              "SUB": "Subtitulado"
-            };
+            const LANG_MAP = { "LAT": "Latino", "ESP": "Castellano", "SUB": "Subtitulado" };
             for (const langData of dataLinkJson) {
               const langCode = langData.video_language;
-              if (!langData.sortedEmbeds || !Array.isArray(langData.sortedEmbeds))
+              const embeds = langData.sortedEmbeds;
+              if (!embeds || !Array.isArray(embeds))
                 continue;
-              const streamPromises = langData.sortedEmbeds.map((embed) => __async(this, null, function* () {
+              console.log(`[Embed69] Procesando idioma: ${langCode} (${embeds.length} servers)`);
+              for (const embed of embeds) {
                 if (!embed.link || embed.servername === "download")
-                  return null;
+                  continue;
                 try {
                   const payload = decodeJwtPayload(embed.link);
                   if (payload && payload.link) {
                     const resolved = yield resolvers.resolve(embed.servername, payload.link);
                     if (resolved && resolved.url) {
-                      const qualityLabel = resolved.verified ? `${resolved.quality} \u2705` : resolved.quality || "HD";
-                      const formatServer = (name) => {
-                        if (!name)
-                          return "Unknown";
-                        return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
-                      };
-                      return {
-                        name: `Embed69 - ${formatServer(embed.servername)}`,
+                      allResults.push({
+                        name: `Embed69 - ${embed.servername.charAt(0).toUpperCase() + embed.servername.slice(1).toLowerCase()}`,
                         language: LANG_MAP[langCode] || langCode,
-                        quality: qualityLabel,
-                        url: resolved.url
-                      };
+                        quality: resolved.verified ? `${resolved.quality} \u2705` : resolved.quality || "HD",
+                        url: resolved.url,
+                        headers: resolved.headers
+                      });
                     }
                   }
-                } catch (e) {
-                  return null;
+                } catch (err) {
+                  console.error(`[Embed69] Error resolviendo ${embed.servername}:`, err.message);
                 }
-                return null;
-              }));
-              const results = (yield Promise.all(streamPromises)).filter((s) => s !== null);
-              allResults.push(...results);
+              }
             }
-            console.log(`[Embed69] \u2713 ${allResults.length} streams totales encontrados.`);
+            console.log(`[Embed69] Total: ${allResults.length} resultados.`);
             return allResults;
           } catch (error) {
+            console.error("[Embed69] Error cr\xEDtico:", error.message);
             return [];
           }
         });
