@@ -1,6 +1,6 @@
 /**
  * cinecalidad - Plugin Nuvio
- * Generado: 2026-04-28T19:59:53.536Z
+ * Generado: 2026-04-28T20:40:46.543Z
  */
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __commonJS = (cb, mod) => function __require() {
@@ -35,18 +35,21 @@ var require_tmdb = __commonJS({
       const appKey = settings.tmdb_api_key || settings.tmdbApiKey || (typeof TMDB_API_KEY !== "undefined" ? TMDB_API_KEY : null);
       return appKey || "439c478a771f35c05022f9feabcca01c";
     }
+    var NUVIO_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
     function getImdbId(tmdbId, mediaType) {
       return __async(this, null, function* () {
         try {
           const type = String(mediaType || "").toLowerCase().includes("movie") ? "movie" : "tv";
           const apiKey = getTmdbApiKey();
           const url = `https://api.themoviedb.org/3/${type}/${tmdbId}/external_ids?api_key=${apiKey}`;
-          console.log(`[TMDB] Consultando (${type}): ${tmdbId} usando API Key: ${apiKey.substring(0, 4)}...`);
+          console.log(`[TMDB] Consultando (${type}): ${tmdbId}`);
           const response = yield fetch(url, {
-            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" }
+            headers: { "User-Agent": NUVIO_UA }
           });
+          if (!response.ok)
+            return null;
           const data = yield response.json();
-          return data.imdb_id || null;
+          return data ? data.imdb_id || null : null;
         } catch (e) {
           console.error("[TMDB] Error obteniendo IMDB ID:", e.message);
           return null;
@@ -59,9 +62,8 @@ var require_tmdb = __commonJS({
           const type = String(mediaType || "").toLowerCase().includes("movie") ? "movie" : "tv";
           const apiKey = getTmdbApiKey();
           const url = `https://api.themoviedb.org/3/${type}/${tmdbId}?api_key=${apiKey}&language=es-MX`;
-          console.log(`[TMDB] Detalles (${type}): ${tmdbId}`);
           const response = yield fetch(url, {
-            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" }
+            headers: { "User-Agent": NUVIO_UA }
           });
           if (!response.ok)
             return null;
@@ -79,9 +81,13 @@ var require_tmdb = __commonJS({
           const apiKey = getTmdbApiKey();
           const url = `https://api.themoviedb.org/3/${type}/${tmdbId}/alternative_titles?api_key=${apiKey}`;
           const response = yield fetch(url, {
-            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" }
+            headers: { "User-Agent": NUVIO_UA }
           });
+          if (!response.ok)
+            return [];
           const data = yield response.json();
+          if (!data)
+            return [];
           const titles = data.titles || data.results || [];
           return titles.map((t) => t.title || t.name);
         } catch (e) {
@@ -836,14 +842,18 @@ var require_resolvers = __commonJS({
         if (registry[name]) {
           const result = yield registry[name](url);
           if (result && result.url) {
-            console.log(`[Resolvers] Detectando calidad real para: ${name}`);
-            const detection = yield m3u8Parser.detectRealQuality(result.url, result.headers || {});
-            if (detection && detection.quality) {
-              console.log(`[Resolvers] Calidad detectada: ${detection.quality}`);
-              result.quality = detection.quality;
-              result.verified = true;
-            } else if (detection && detection.error) {
-              result.debug = detection.error;
+            try {
+              console.log(`[Resolvers] Detectando calidad real para: ${name}`);
+              const detection = yield m3u8Parser.detectRealQuality(result.url, result.headers || {});
+              if (detection && detection.quality) {
+                console.log(`[Resolvers] Calidad detectada: ${detection.quality}`);
+                result.quality = detection.quality;
+                result.verified = true;
+              } else if (detection && detection.error) {
+                result.debug = detection.error;
+              }
+            } catch (e) {
+              console.error(`[Resolvers] Fallo en detecci\xF3n de calidad: ${e.message}`);
             }
           }
           return result;
@@ -1011,39 +1021,36 @@ var require_extractor = __commonJS({
         }
       });
     }
-    function getStreams(tmdbId, mediaType, season, episode) {
+    function getStreams(tmdbId, mediaType, season, episode, providedTitle) {
       return __async(this, null, function* () {
         if (mediaType === "tv")
           return [];
         try {
-          const details = yield tmdb.getDetails(tmdbId, mediaType);
-          if (!details)
+          let title = providedTitle;
+          let year = null;
+          if (!title && tmdbId) {
+            const details = yield tmdb.getDetails(tmdbId, mediaType);
+            if (details) {
+              title = details.title || details.original_title;
+              year = (details.release_date || "").substring(0, 4);
+            }
+          }
+          if (!title) {
+            console.log(`[CineCalidad] Error: No se pudo determinar el t\xEDtulo para TMDB:${tmdbId}`);
             return [];
-          const title = details.title || details.original_title;
-          const originalTitle = details.original_title;
-          const year = (details.release_date || "").substring(0, 4);
-          console.log(`[CineCalidad] Buscando pel\xEDcula: ${title} (${year})`);
+          }
+          console.log(`[CineCalidad] Buscando: ${title} ${year ? "(" + year + ")" : ""}`);
           let movieUrl = yield getMovieBySlug(buildSlug(title), year);
           if (!movieUrl) {
             const searchResults = yield searchInSite(title);
             if (searchResults.length > 0)
               movieUrl = searchResults[0];
           }
-          if (!movieUrl && originalTitle && originalTitle !== title) {
-            console.log(`[CineCalidad] T\xEDtulo latino no encontrado, probando t\xEDtulo original: ${originalTitle}`);
-            movieUrl = yield getMovieBySlug(buildSlug(originalTitle), year);
-            if (!movieUrl) {
-              const origResults = yield searchInSite(originalTitle);
-              if (origResults.length > 0)
-                movieUrl = origResults[0];
-            }
-          }
-          if (!movieUrl) {
-            console.log(`[CineCalidad] T\xEDtulo no encontrado, probando alias de TMDB...`);
+          if (!movieUrl && tmdbId) {
+            console.log(`[CineCalidad] Probando alias de TMDB...`);
             const aliases = yield tmdb.getTmdbAliases(tmdbId, mediaType);
             const filteredAliases = aliases.filter((a) => /^[a-zA-Z0-9\s\-\:\.\,¡!¿?áéíóúÁÉÍÓÚñÑ]+$/.test(a)).filter((a) => a.toLowerCase() !== title.toLowerCase()).slice(0, 5);
             for (const alias of filteredAliases) {
-              console.log(`[CineCalidad] Probando alias: ${alias}`);
               movieUrl = yield getMovieBySlug(buildSlug(alias), year);
               if (movieUrl)
                 break;
@@ -1060,7 +1067,7 @@ var require_extractor = __commonJS({
           }
           return yield extractStreams(movieUrl);
         } catch (e) {
-          console.error("[CineCalidad] Error general:", e.message);
+          console.error("[CineCalidad] Error fatal:", e.message);
           return [];
         }
       });

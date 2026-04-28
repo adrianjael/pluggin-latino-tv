@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-28T19:59:53.584Z
+ * Generado: 2026-04-28T20:40:46.608Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -827,14 +827,18 @@ var require_resolvers = __commonJS({
         if (registry[name]) {
           const result = yield registry[name](url);
           if (result && result.url) {
-            console.log(`[Resolvers] Detectando calidad real para: ${name}`);
-            const detection = yield m3u8Parser.detectRealQuality(result.url, result.headers || {});
-            if (detection && detection.quality) {
-              console.log(`[Resolvers] Calidad detectada: ${detection.quality}`);
-              result.quality = detection.quality;
-              result.verified = true;
-            } else if (detection && detection.error) {
-              result.debug = detection.error;
+            try {
+              console.log(`[Resolvers] Detectando calidad real para: ${name}`);
+              const detection = yield m3u8Parser.detectRealQuality(result.url, result.headers || {});
+              if (detection && detection.quality) {
+                console.log(`[Resolvers] Calidad detectada: ${detection.quality}`);
+                result.quality = detection.quality;
+                result.verified = true;
+              } else if (detection && detection.error) {
+                result.debug = detection.error;
+              }
+            } catch (e) {
+              console.error(`[Resolvers] Fallo en detecci\xF3n de calidad: ${e.message}`);
             }
           }
           return result;
@@ -854,18 +858,21 @@ var require_tmdb = __commonJS({
       const appKey = settings.tmdb_api_key || settings.tmdbApiKey || (typeof TMDB_API_KEY !== "undefined" ? TMDB_API_KEY : null);
       return appKey || "439c478a771f35c05022f9feabcca01c";
     }
+    var NUVIO_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
     function getImdbId(tmdbId, mediaType) {
       return __async(this, null, function* () {
         try {
           const type = String(mediaType || "").toLowerCase().includes("movie") ? "movie" : "tv";
           const apiKey = getTmdbApiKey();
           const url = `https://api.themoviedb.org/3/${type}/${tmdbId}/external_ids?api_key=${apiKey}`;
-          console.log(`[TMDB] Consultando (${type}): ${tmdbId} usando API Key: ${apiKey.substring(0, 4)}...`);
+          console.log(`[TMDB] Consultando (${type}): ${tmdbId}`);
           const response = yield fetch(url, {
-            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" }
+            headers: { "User-Agent": NUVIO_UA }
           });
+          if (!response.ok)
+            return null;
           const data = yield response.json();
-          return data.imdb_id || null;
+          return data ? data.imdb_id || null : null;
         } catch (e) {
           console.error("[TMDB] Error obteniendo IMDB ID:", e.message);
           return null;
@@ -878,9 +885,8 @@ var require_tmdb = __commonJS({
           const type = String(mediaType || "").toLowerCase().includes("movie") ? "movie" : "tv";
           const apiKey = getTmdbApiKey();
           const url = `https://api.themoviedb.org/3/${type}/${tmdbId}?api_key=${apiKey}&language=es-MX`;
-          console.log(`[TMDB] Detalles (${type}): ${tmdbId}`);
           const response = yield fetch(url, {
-            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" }
+            headers: { "User-Agent": NUVIO_UA }
           });
           if (!response.ok)
             return null;
@@ -898,9 +904,13 @@ var require_tmdb = __commonJS({
           const apiKey = getTmdbApiKey();
           const url = `https://api.themoviedb.org/3/${type}/${tmdbId}/alternative_titles?api_key=${apiKey}`;
           const response = yield fetch(url, {
-            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" }
+            headers: { "User-Agent": NUVIO_UA }
           });
+          if (!response.ok)
+            return [];
           const data = yield response.json();
+          if (!data)
+            return [];
           const titles = data.titles || data.results || [];
           return titles.map((t) => t.title || t.name);
         } catch (e) {
