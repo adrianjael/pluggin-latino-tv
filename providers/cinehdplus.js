@@ -1,24 +1,8 @@
 /**
- * embed69 - Plugin Nuvio
- * Generado: 2026-04-28T15:07:57.211Z
+ * cinehdplus - Plugin Nuvio
+ * Generado: 2026-04-28T15:07:57.203Z
  */
-var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
 var __commonJS = (cb, mod) => function __require() {
   return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
 };
@@ -43,181 +27,70 @@ var __async = (__this, __arguments, generator) => {
   });
 };
 
-// src/embed69/http.js
-var require_http = __commonJS({
-  "src/embed69/http.js"(exports2, module2) {
-    var http = {
-      get(_0) {
-        return __async(this, arguments, function* (url, headers = {}) {
-          try {
-            const response = yield fetch(url, {
-              method: "GET",
-              headers: __spreadValues({
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-              }, headers)
-            });
-            return yield response.text();
-          } catch (error) {
-            console.error(`[HTTP GET Error] ${url}:`, error.message);
-            throw error;
-          }
-        });
-      },
-      post(_0, _1) {
-        return __async(this, arguments, function* (url, data, headers = {}) {
-          try {
-            const response = yield fetch(url, {
-              method: "POST",
-              headers: __spreadValues({
-                "Content-Type": "application/x-www-form-urlencoded"
-              }, headers),
-              body: typeof data === "string" ? data : JSON.stringify(data)
-            });
-            return yield response.text();
-          } catch (error) {
-            console.error(`[HTTP POST Error] ${url}:`, error.message);
-            throw error;
-          }
-        });
-      }
-    };
-    module2.exports = http;
-  }
-});
-
-// src/shared/utils/unpacker.js
-var require_unpacker = __commonJS({
-  "src/shared/utils/unpacker.js"(exports2, module2) {
-    function unpack(code) {
-      try {
-        const match = code.match(/eval\(function\(p,a,c,k,e,[rd]\)\{.*?\}\s*\('([\s\S]*?)',\s*(\d+),\s*(\d+),\s*'([\s\S]*?)'\.split\('\|'\)/);
-        if (!match)
-          return code;
-        let [, p, a, c, k] = match;
-        a = parseInt(a);
-        c = parseInt(c);
-        let kArr = k.split("|");
-        const intToChar = (v, radix) => {
-          const chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-          let res = "";
-          while (v > 0) {
-            res = chars[v % radix] + res;
-            v = Math.floor(v / radix);
-          }
-          return res || "0";
-        };
-        const result = p.replace(/\b\w+\b/g, (e) => {
-          const index = parseInt(e, 36);
-          let word = kArr[index];
-          if (!word) {
-            const altIndex = parseInt(e, a);
-            word = kArr[altIndex];
-          }
-          return word || e;
-        });
-        return result;
-      } catch (e) {
-        console.error("[Unpacker] Error des-empaquetando:", e.message);
-        return code;
-      }
+// src/shared/utils/tmdb.js
+var require_tmdb = __commonJS({
+  "src/shared/utils/tmdb.js"(exports2, module2) {
+    function getTmdbApiKey() {
+      const settings = typeof globalThis !== "undefined" && globalThis.SCRAPER_SETTINGS || {};
+      const appKey = settings.tmdb_api_key || settings.tmdbApiKey || (typeof TMDB_API_KEY !== "undefined" ? TMDB_API_KEY : null);
+      return appKey || "439c478a771f35c05022f9feabcca01c";
     }
-    module2.exports = { unpack };
-  }
-});
-
-// src/shared/resolvers/vidhide.js
-var require_vidhide = __commonJS({
-  "src/shared/resolvers/vidhide.js"(exports2, module2) {
-    var { unpack } = require_unpacker();
-    var USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
-    function resolveVidhide(url, customReferer) {
+    function getImdbId(tmdbId, mediaType) {
       return __async(this, null, function* () {
-        var _a;
         try {
-          console.log(`[Resolvers] Resolviendo VidHide: ${url}`);
-          const origin = new URL(url).origin;
-          const referer = customReferer || "https://embed69.org/";
+          const type = String(mediaType || "").toLowerCase().includes("movie") ? "movie" : "tv";
+          const apiKey = getTmdbApiKey();
+          const url = `https://api.themoviedb.org/3/${type}/${tmdbId}/external_ids?api_key=${apiKey}`;
+          console.log(`[TMDB] Consultando (${type}): ${tmdbId} usando API Key: ${apiKey.substring(0, 4)}...`);
           const response = yield fetch(url, {
-            headers: {
-              "User-Agent": USER_AGENT,
-              "Referer": referer
-            }
+            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" }
           });
-          const html = yield response.text();
-          const evalMatch = html.match(/eval\(function\(p,a,c,k,e,[rd]\)[\s\S]*?\.split\('\|'\)[^\)]*\)\)/);
-          let contentToSearch = html;
-          if (evalMatch) {
-            contentToSearch = unpack(evalMatch[0]);
-          }
-          const hls4 = contentToSearch.match(/"?hls4"?\s*:\s*"([^"]+)"/);
-          const hls2 = contentToSearch.match(/"?hls2"?\s*:\s*"([^"]+)"/);
-          const link = (_a = hls4 || hls2) == null ? void 0 : _a[1];
-          if (!link)
-            return null;
-          let finalUrl = link.startsWith("http") ? link : `${origin}${link}`;
-          return {
-            url: finalUrl,
-            quality: "1080p",
-            headers: {
-              "User-Agent": USER_AGENT,
-              "Referer": `${origin}/`
-            }
-          };
+          const data = yield response.json();
+          return data.imdb_id || null;
         } catch (e) {
-          console.error(`[Resolvers] Error en VidHide: ${e.message}`);
+          console.error("[TMDB] Error obteniendo IMDB ID:", e.message);
           return null;
         }
       });
     }
-    module2.exports = resolveVidhide;
-  }
-});
-
-// src/shared/resolvers/streamwish.js
-var require_streamwish = __commonJS({
-  "src/shared/resolvers/streamwish.js"(exports2, module2) {
-    var { unpack } = require_unpacker();
-    var USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
-    function resolveStreamwish(url) {
+    function getDetails(tmdbId, mediaType) {
       return __async(this, null, function* () {
         try {
-          console.log(`[Resolvers] Resolviendo Streamwish: ${url}`);
-          let fetchUrl = url.replace("hglink.to", "vibuxer.com");
-          const originMatch = fetchUrl.match(/^(https?:\/\/[^\/]+)/);
-          const origin = originMatch ? originMatch[1] : "";
-          const response = yield fetch(fetchUrl, {
-            headers: {
-              "User-Agent": USER_AGENT,
-              "Referer": "https://embed69.org/",
-              "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"
-            }
+          const type = String(mediaType || "").toLowerCase().includes("movie") ? "movie" : "tv";
+          const apiKey = getTmdbApiKey();
+          const url = `https://api.themoviedb.org/3/${type}/${tmdbId}?api_key=${apiKey}&language=es-MX`;
+          console.log(`[TMDB] Detalles (${type}): ${tmdbId}`);
+          const response = yield fetch(url, {
+            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" }
           });
-          const html = yield response.text();
-          const evalMatch = html.match(/eval\(function\(p,a,c,k,e,[rd]\)[\s\S]*?\.split\('\|'\)[^\)]*\)\)/);
-          let contentToSearch = html;
-          if (evalMatch) {
-            contentToSearch += "\n" + unpack(evalMatch[0]);
-          }
-          const fileMatch = contentToSearch.match(/(?:file|source|src)\s*:\s*["']([^"']+\.(?:m3u8|mp4)[^"']*)["']/i);
-          if (fileMatch) {
-            let streamUrl = fileMatch[1];
-            if (streamUrl.startsWith("/")) {
-              streamUrl = origin + streamUrl;
-            }
-            return { url: streamUrl, quality: "Auto", headers: { "Referer": origin + "/" } };
-          }
-          const m3u8Fallback = contentToSearch.match(/https?:\/\/[^"'\s\\]+\.m3u8[^"'\s\\]*/i);
-          if (m3u8Fallback) {
-            return { url: m3u8Fallback[0], quality: "Auto", headers: { "Referer": origin + "/" } };
-          }
-          return null;
+          if (!response.ok)
+            return null;
+          return yield response.json();
         } catch (e) {
-          console.error(`[Resolvers] Error en Streamwish: ${e.message}`);
+          console.error("[TMDB] Error obteniendo detalles:", e.message);
           return null;
         }
       });
     }
-    module2.exports = resolveStreamwish;
+    function getTmdbAliases(tmdbId, mediaType) {
+      return __async(this, null, function* () {
+        try {
+          const type = String(mediaType || "").toLowerCase().includes("movie") ? "movie" : "tv";
+          const apiKey = getTmdbApiKey();
+          const url = `https://api.themoviedb.org/3/${type}/${tmdbId}/alternative_titles?api_key=${apiKey}`;
+          const response = yield fetch(url, {
+            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" }
+          });
+          const data = yield response.json();
+          const titles = data.titles || data.results || [];
+          return titles.map((t) => t.title || t.name);
+        } catch (e) {
+          console.error("[TMDB] Error obteniendo alias:", e.message);
+          return [];
+        }
+      });
+    }
+    module2.exports = { getImdbId, getDetails, getTmdbAliases };
   }
 });
 
@@ -343,6 +216,142 @@ var require_voe = __commonJS({
       });
     }
     module2.exports = resolveVoe;
+  }
+});
+
+// src/shared/utils/unpacker.js
+var require_unpacker = __commonJS({
+  "src/shared/utils/unpacker.js"(exports2, module2) {
+    function unpack(code) {
+      try {
+        const match = code.match(/eval\(function\(p,a,c,k,e,[rd]\)\{.*?\}\s*\('([\s\S]*?)',\s*(\d+),\s*(\d+),\s*'([\s\S]*?)'\.split\('\|'\)/);
+        if (!match)
+          return code;
+        let [, p, a, c, k] = match;
+        a = parseInt(a);
+        c = parseInt(c);
+        let kArr = k.split("|");
+        const intToChar = (v, radix) => {
+          const chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+          let res = "";
+          while (v > 0) {
+            res = chars[v % radix] + res;
+            v = Math.floor(v / radix);
+          }
+          return res || "0";
+        };
+        const result = p.replace(/\b\w+\b/g, (e) => {
+          const index = parseInt(e, 36);
+          let word = kArr[index];
+          if (!word) {
+            const altIndex = parseInt(e, a);
+            word = kArr[altIndex];
+          }
+          return word || e;
+        });
+        return result;
+      } catch (e) {
+        console.error("[Unpacker] Error des-empaquetando:", e.message);
+        return code;
+      }
+    }
+    module2.exports = { unpack };
+  }
+});
+
+// src/shared/resolvers/streamwish.js
+var require_streamwish = __commonJS({
+  "src/shared/resolvers/streamwish.js"(exports2, module2) {
+    var { unpack } = require_unpacker();
+    var USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+    function resolveStreamwish(url) {
+      return __async(this, null, function* () {
+        try {
+          console.log(`[Resolvers] Resolviendo Streamwish: ${url}`);
+          let fetchUrl = url.replace("hglink.to", "vibuxer.com");
+          const originMatch = fetchUrl.match(/^(https?:\/\/[^\/]+)/);
+          const origin = originMatch ? originMatch[1] : "";
+          const response = yield fetch(fetchUrl, {
+            headers: {
+              "User-Agent": USER_AGENT,
+              "Referer": "https://embed69.org/",
+              "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"
+            }
+          });
+          const html = yield response.text();
+          const evalMatch = html.match(/eval\(function\(p,a,c,k,e,[rd]\)[\s\S]*?\.split\('\|'\)[^\)]*\)\)/);
+          let contentToSearch = html;
+          if (evalMatch) {
+            contentToSearch += "\n" + unpack(evalMatch[0]);
+          }
+          const fileMatch = contentToSearch.match(/(?:file|source|src)\s*:\s*["']([^"']+\.(?:m3u8|mp4)[^"']*)["']/i);
+          if (fileMatch) {
+            let streamUrl = fileMatch[1];
+            if (streamUrl.startsWith("/")) {
+              streamUrl = origin + streamUrl;
+            }
+            return { url: streamUrl, quality: "Auto", headers: { "Referer": origin + "/" } };
+          }
+          const m3u8Fallback = contentToSearch.match(/https?:\/\/[^"'\s\\]+\.m3u8[^"'\s\\]*/i);
+          if (m3u8Fallback) {
+            return { url: m3u8Fallback[0], quality: "Auto", headers: { "Referer": origin + "/" } };
+          }
+          return null;
+        } catch (e) {
+          console.error(`[Resolvers] Error en Streamwish: ${e.message}`);
+          return null;
+        }
+      });
+    }
+    module2.exports = resolveStreamwish;
+  }
+});
+
+// src/shared/resolvers/vidhide.js
+var require_vidhide = __commonJS({
+  "src/shared/resolvers/vidhide.js"(exports2, module2) {
+    var { unpack } = require_unpacker();
+    var USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+    function resolveVidhide(url, customReferer) {
+      return __async(this, null, function* () {
+        var _a;
+        try {
+          console.log(`[Resolvers] Resolviendo VidHide: ${url}`);
+          const origin = new URL(url).origin;
+          const referer = customReferer || "https://embed69.org/";
+          const response = yield fetch(url, {
+            headers: {
+              "User-Agent": USER_AGENT,
+              "Referer": referer
+            }
+          });
+          const html = yield response.text();
+          const evalMatch = html.match(/eval\(function\(p,a,c,k,e,[rd]\)[\s\S]*?\.split\('\|'\)[^\)]*\)\)/);
+          let contentToSearch = html;
+          if (evalMatch) {
+            contentToSearch = unpack(evalMatch[0]);
+          }
+          const hls4 = contentToSearch.match(/"?hls4"?\s*:\s*"([^"]+)"/);
+          const hls2 = contentToSearch.match(/"?hls2"?\s*:\s*"([^"]+)"/);
+          const link = (_a = hls4 || hls2) == null ? void 0 : _a[1];
+          if (!link)
+            return null;
+          let finalUrl = link.startsWith("http") ? link : `${origin}${link}`;
+          return {
+            url: finalUrl,
+            quality: "1080p",
+            headers: {
+              "User-Agent": USER_AGENT,
+              "Referer": `${origin}/`
+            }
+          };
+        } catch (e) {
+          console.error(`[Resolvers] Error en VidHide: ${e.message}`);
+          return null;
+        }
+      });
+    }
+    module2.exports = resolveVidhide;
   }
 });
 
@@ -640,309 +649,271 @@ var require_generic_packer = __commonJS({
   }
 });
 
-// src/shared/utils/m3u8.js
-var require_m3u8 = __commonJS({
-  "src/shared/utils/m3u8.js"(exports2, module2) {
-    var m3u8Parser = {
-      getQualityFromHeight(height) {
-        const h = parseInt(height);
-        if (h >= 2160)
-          return "4K";
-        if (h >= 1440)
-          return "1440p";
-        if (h >= 1080)
-          return "1080p";
-        if (h >= 720)
-          return "720p";
-        if (h >= 480)
-          return "480p";
-        if (h >= 360)
-          return "360p";
-        return null;
-      },
-      /**
-       * Busca patrones de calidad 100% seguros en la URL para evitar descargas innecesarias
-       */
-      getQualityFromSafePatterns(url) {
-        if (!url)
-          return null;
-        const u = url.toLowerCase();
-        if (u.includes(",h,.urlset"))
-          return "1080p";
-        if (u.includes(",n,.urlset"))
-          return "720p";
-        if (u.includes(",l,.urlset"))
-          return "480p";
-        const standardMatch = u.match(/[_-](1080|720|480|360)p?(\.m3u8|$|\?)/);
-        if (standardMatch)
-          return standardMatch[1] + "p";
-        return null;
-      },
-      getQualityFromContent(content) {
-        if (!content)
-          return null;
-        try {
-          const lines = content.split("\n");
-          let bestHeight = 0;
-          for (const line of lines) {
-            if (line.includes("RESOLUTION=")) {
-              const match = line.match(/RESOLUTION=\d+x(\d+)/i);
-              if (match) {
-                const height = parseInt(match[1]);
-                if (height > bestHeight)
-                  bestHeight = height;
-              }
-            }
-          }
-          return bestHeight > 0 ? this.getQualityFromHeight(bestHeight) : null;
-        } catch (e) {
-          return null;
-        }
-      },
-      detectRealQuality(_0) {
-        return __async(this, arguments, function* (url, headers = {}) {
-          try {
-            const fastQuality = this.getQualityFromSafePatterns(url);
-            if (fastQuality)
-              return { quality: fastQuality, error: null };
-            const response = yield fetch(url, { headers }).catch(() => null);
-            if (!response || !response.ok)
-              return null;
-            const content = yield response.text();
-            const realQuality = this.getQualityFromContent(content);
-            return realQuality ? { quality: realQuality, error: null } : null;
-          } catch (e) {
-            return null;
-          }
-        });
-      }
-    };
-    module2.exports = m3u8Parser;
-  }
-});
-
-// src/shared/resolvers/index.js
-var require_resolvers = __commonJS({
-  "src/shared/resolvers/index.js"(exports2, module2) {
-    var resolveVidhide = require_vidhide();
-    var resolveStreamwish = require_streamwish();
+// src/cinehdplus/extractor.js
+var require_extractor = __commonJS({
+  "src/cinehdplus/extractor.js"(exports2, module2) {
+    var cheerio = require("cheerio");
+    var tmdb = require_tmdb();
     var resolveVoe = require_voe();
+    var resolveStreamwish = require_streamwish();
+    var resolveVidhide = require_vidhide();
     var resolveFilemoon = require_filemoon();
     var resolveStreamtape = require_streamtape();
     var resolveGenericPacker = require_generic_packer();
-    var m3u8Parser = require_m3u8();
-    var registry = {
-      vidhide: resolveVidhide,
-      streamwish: resolveStreamwish,
-      filemoon: resolveFilemoon,
-      voe: resolveVoe,
-      streamtape: resolveStreamtape,
-      vimeos: resolveGenericPacker,
-      goodstream: resolveGenericPacker
-    };
-    function resolve(servername, url) {
-      return __async(this, null, function* () {
-        const name = String(servername).toLowerCase().trim();
-        if (registry[name]) {
-          const result = yield registry[name](url);
-          if (result && result.url) {
-            console.log(`[Resolvers] Detectando calidad real para: ${name}`);
-            const detection = yield m3u8Parser.detectRealQuality(result.url, result.headers || {});
-            if (detection && detection.quality) {
-              console.log(`[Resolvers] Calidad detectada: ${detection.quality}`);
-              result.quality = detection.quality;
-              result.verified = true;
-            } else if (detection && detection.error) {
-              result.debug = detection.error;
-            }
-          }
-          return result;
-        }
-        return null;
+    var baseURL = "https://cinehdplus.org";
+    var apiURL = "https://api.cinehdplus.org";
+    var NUVIO_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+    function getResolverForUrl(url) {
+      const lower = url.toLowerCase();
+      if (lower.includes("voe.sx") || lower.includes("voe."))
+        return { fn: resolveVoe, name: "voe" };
+      if (lower.includes("streamwish") || lower.includes("vibuxer"))
+        return { fn: resolveStreamwish, name: "streamwish" };
+      if (lower.includes("vidhide") || lower.includes("vidsrc"))
+        return { fn: resolveVidhide, name: "vidhide" };
+      if (lower.includes("filemoon") || lower.includes("moonplayer"))
+        return { fn: resolveFilemoon, name: "filemoon" };
+      if (lower.includes("streamtape"))
+        return { fn: resolveStreamtape, name: "streamtape" };
+      if (lower.includes("mixdrop"))
+        return { fn: resolveGenericPacker, name: "mixdrop" };
+      return null;
+    }
+    function rot13Decode(str) {
+      return str.replace(/[a-zA-Z]/g, function(c) {
+        return String.fromCharCode(
+          (c <= "Z" ? 90 : 122) >= (c = c.charCodeAt(0) + 13) ? c : c - 26
+        );
       });
     }
-    module2.exports = { resolve };
-  }
-});
-
-// src/shared/utils/tmdb.js
-var require_tmdb = __commonJS({
-  "src/shared/utils/tmdb.js"(exports2, module2) {
-    function getTmdbApiKey() {
-      const settings = typeof globalThis !== "undefined" && globalThis.SCRAPER_SETTINGS || {};
-      const appKey = settings.tmdb_api_key || settings.tmdbApiKey || (typeof TMDB_API_KEY !== "undefined" ? TMDB_API_KEY : null);
-      return appKey || "439c478a771f35c05022f9feabcca01c";
-    }
-    function getImdbId(tmdbId, mediaType) {
+    function resolveCineHDUrl(hash, referer) {
       return __async(this, null, function* () {
         try {
-          const type = String(mediaType || "").toLowerCase().includes("movie") ? "movie" : "tv";
-          const apiKey = getTmdbApiKey();
-          const url = `https://api.themoviedb.org/3/${type}/${tmdbId}/external_ids?api_key=${apiKey}`;
-          console.log(`[TMDB] Consultando (${type}): ${tmdbId} usando API Key: ${apiKey.substring(0, 4)}...`);
-          const response = yield fetch(url, {
-            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" }
+          const step1Url = `${apiURL}/ir/goto.php?h=${hash}`;
+          const step1Res = yield fetch(step1Url, {
+            headers: { "User-Agent": NUVIO_UA, "Referer": referer }
           });
-          const data = yield response.json();
-          return data.imdb_id || null;
+          if (!step1Res.ok)
+            return null;
+          const step1Html = yield step1Res.text();
+          const $1 = cheerio.load(step1Html);
+          const form1Value = $1('input[name="url"]').attr("value");
+          if (!form1Value)
+            return null;
+          const step2Body = new URLSearchParams();
+          step2Body.append("url", form1Value);
+          const step2Res = yield fetch(`${apiURL}/ir/rd.php`, {
+            method: "POST",
+            headers: { "User-Agent": NUVIO_UA, "Referer": step1Url },
+            body: step2Body
+          });
+          const step2Html = yield step2Res.text();
+          const $2 = cheerio.load(step2Html);
+          const form2Value = $2('input[name="url"]').attr("value");
+          const form2Dl = $2('input[name="dl"]').attr("value") || "0";
+          const form2Action = $2("form#FbAns").attr("action") || "redir_ddh.php";
+          if (!form2Value)
+            return null;
+          const step3Url = `${apiURL}/ir/${form2Action}`;
+          const step3Body = new URLSearchParams();
+          step3Body.append("url", form2Value);
+          step3Body.append("dl", form2Dl);
+          const step3Res = yield fetch(step3Url, {
+            method: "POST",
+            headers: { "User-Agent": NUVIO_UA, "Referer": `${apiURL}/ir/go_ddh.php` },
+            body: step3Body
+          });
+          if (!step3Res.ok)
+            return null;
+          const step3Html = yield step3Res.text();
+          const $3 = cheerio.load(step3Html);
+          const encodedVid = $3('input[name="vid"]').attr("value");
+          if (!encodedVid)
+            return null;
+          const base64Decoded = atob(encodedVid);
+          const playerUrl = rot13Decode(base64Decoded);
+          console.log(`[CineHDPlus] Reproductor externo: ${playerUrl}`);
+          return playerUrl;
         } catch (e) {
-          console.error("[TMDB] Error obteniendo IMDB ID:", e.message);
+          console.error("[CineHDPlus] Error resolviendo hash:", e.message);
           return null;
         }
       });
     }
-    function getDetails(tmdbId, mediaType) {
+    function searchInSite(query, year) {
       return __async(this, null, function* () {
         try {
-          const type = String(mediaType || "").toLowerCase().includes("movie") ? "movie" : "tv";
-          const apiKey = getTmdbApiKey();
-          const url = `https://api.themoviedb.org/3/${type}/${tmdbId}?api_key=${apiKey}&language=es-MX`;
-          console.log(`[TMDB] Detalles (${type}): ${tmdbId}`);
-          const response = yield fetch(url, {
-            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" }
+          const response = yield fetch(`${baseURL}/?s=${encodeURIComponent(query)}`, {
+            headers: {
+              "User-Agent": NUVIO_UA,
+              "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+            }
           });
           if (!response.ok)
             return null;
-          return yield response.json();
+          const html = yield response.text();
+          const $ = cheerio.load(html);
+          let foundUrl = null;
+          $(".card").each((i, el) => {
+            const href = $(el).find(".card__cover a").first().attr("href");
+            const itemYear = $(el).find(".year").text().trim();
+            if (href && !foundUrl) {
+              if (year && itemYear && itemYear.includes(year)) {
+                foundUrl = href;
+              } else if (!year) {
+                foundUrl = href;
+              }
+            }
+          });
+          return foundUrl || $(".card .card__cover a").first().attr("href");
         } catch (e) {
-          console.error("[TMDB] Error obteniendo detalles:", e.message);
+          console.error("[CineHDPlus] Error en b\xFAsqueda:", e.message);
           return null;
         }
       });
     }
-    function getTmdbAliases(tmdbId, mediaType) {
+    function extractStreamsFromUrl(url) {
       return __async(this, null, function* () {
         try {
-          const type = String(mediaType || "").toLowerCase().includes("movie") ? "movie" : "tv";
-          const apiKey = getTmdbApiKey();
-          const url = `https://api.themoviedb.org/3/${type}/${tmdbId}/alternative_titles?api_key=${apiKey}`;
           const response = yield fetch(url, {
-            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" }
+            headers: { "User-Agent": NUVIO_UA, "Accept": "text/html,application/xhtml+xml" }
           });
-          const data = yield response.json();
-          const titles = data.titles || data.results || [];
-          return titles.map((t) => t.title || t.name);
+          if (!response.ok)
+            return [];
+          const html = yield response.text();
+          const $ = cheerio.load(html);
+          const rawItems = [];
+          const seenHashes = /* @__PURE__ */ new Set();
+          const playerMap = {};
+          $(".submenu_lang li[data-tplayernv]").each((i, el) => {
+            const id = $(el).attr("data-tplayernv");
+            const name = $(el).find("span").text().trim();
+            const lang = $(el).attr("data-lang") === "lat" ? "Latino" : "Castellano";
+            playerMap[id] = { name, lang };
+          });
+          $("iframe").each((i, el) => {
+            const src = $(el).attr("data-src") || $(el).attr("src");
+            if (src && src.includes("player.php?h=")) {
+              const parentId = $(el).closest(".embed_url").attr("id");
+              const info = playerMap[parentId] || { name: `CineHD+ ${i + 1}`, lang: "Latino" };
+              try {
+                const u = new URL(src.startsWith("//") ? "https:" + src : src);
+                const h = u.searchParams.get("h");
+                if (h && !seenHashes.has(h)) {
+                  seenHashes.add(h);
+                  rawItems.push({ hash: h, name: info.name, lang: info.lang, referer: src });
+                }
+              } catch (_) {
+              }
+            }
+          });
+          $("li[data-url]").each((i, el) => {
+            const dataUrl = $(el).attr("data-url");
+            if (dataUrl && dataUrl.includes("player.php?h=")) {
+              try {
+                const u = new URL(dataUrl.startsWith("//") ? "https:" + dataUrl : dataUrl);
+                const h = u.searchParams.get("h");
+                if (h && !seenHashes.has(h)) {
+                  seenHashes.add(h);
+                  rawItems.push({ hash: h, name: `CineHD+ ${i + 1}`, lang: "Latino", referer: dataUrl });
+                }
+              } catch (_) {
+              }
+            }
+          });
+          if (rawItems.length === 0) {
+            console.log("[CineHDPlus] No se encontraron reproductores.");
+            return [];
+          }
+          console.log(`[CineHDPlus] ${rawItems.length} enlace(s) encontrados. Resolviendo a m3u8/mp4...`);
+          const streams = [];
+          for (const item of rawItems) {
+            if (item.lang !== "Latino") {
+              console.log(`[CineHDPlus] Omitiendo ${item.name} (${item.lang})`);
+              continue;
+            }
+            const playerUrl = yield resolveCineHDUrl(item.hash, item.referer);
+            if (!playerUrl)
+              continue;
+            const resolverInfo = getResolverForUrl(playerUrl);
+            if (!resolverInfo) {
+              console.log(`[CineHDPlus] Sin resolver para: ${playerUrl}`);
+              continue;
+            }
+            console.log(`[CineHDPlus] Usando resolver '${resolverInfo.name}' para: ${playerUrl}`);
+            const resolved = yield resolverInfo.fn(playerUrl, baseURL);
+            if (resolved && resolved.url) {
+              streams.push({
+                name: item.name || "CineHD+",
+                url: resolved.url,
+                quality: resolved.quality || "HD",
+                language: item.lang,
+                headers: resolved.headers || { "User-Agent": NUVIO_UA, "Referer": baseURL }
+              });
+              console.log(`[CineHDPlus] \u2705 m3u8/mp4: ${resolved.url}`);
+            } else {
+              console.log(`[CineHDPlus] \u274C No se pudo extraer m3u8 de: ${playerUrl}`);
+            }
+          }
+          return streams;
         } catch (e) {
-          console.error("[TMDB] Error obteniendo alias:", e.message);
+          console.error("[CineHDPlus] Error extrayendo streams:", e.message);
           return [];
         }
       });
     }
-    module2.exports = { getImdbId, getDetails, getTmdbAliases };
-  }
-});
-
-// src/embed69/extractor.js
-var require_extractor = __commonJS({
-  "src/embed69/extractor.js"(exports2, module2) {
-    var http = require_http();
-    var resolvers = require_resolvers();
-    var tmdb = require_tmdb();
-    var { base64Decode } = require_base64();
-    function decodeJwtPayload(token) {
-      try {
-        const parts = token.split(".");
-        if (parts.length !== 3)
-          return null;
-        const base64Url = parts[1];
-        const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-        const jsonPayload = base64Decode(base64);
-        return JSON.parse(jsonPayload);
-      } catch (e) {
-        return null;
-      }
-    }
-    var extractor2 = {
-      getLinks(id, type, season, episode) {
-        return __async(this, null, function* () {
-          let imdbId = id;
-          if (!String(id).startsWith("tt")) {
-            imdbId = yield tmdb.getImdbId(id, type);
-          }
-          if (!imdbId)
+    function getStreams2(tmdbId, mediaType, season, episode) {
+      return __async(this, null, function* () {
+        console.log(`[CineHDPlus] v3.0.0 (Full Resolver): ${mediaType} ID:${tmdbId}`);
+        try {
+          const tmdbDetails = yield tmdb.getDetails(tmdbId, mediaType);
+          if (!tmdbDetails)
             return [];
-          let urlId = imdbId;
-          if (type === "tv" && season && episode) {
-            const ep = String(episode).padStart(2, "0");
-            urlId = `${imdbId}-${season}x${ep}`;
-          }
-          const url = `https://embed69.org/f/${urlId}`;
-          console.log(`[Embed69] Navegando a: ${url}`);
-          try {
-            const response = yield http.get(url);
-            const html = String(response);
-            const match = html.match(/let\s+dataLink\s*=\s*([\[\{][\s\S]*?[\]\}]);/);
-            if (!match)
+          const title = tmdbDetails.title || tmdbDetails.name || tmdbDetails.original_title;
+          const year = (tmdbDetails.release_date || tmdbDetails.first_air_date || "").substring(0, 4);
+          let itemUrl = yield searchInSite(title, year);
+          if (!itemUrl)
+            return [];
+          console.log(`[CineHDPlus] URL encontrada:`, itemUrl);
+          if (mediaType === "tv") {
+            const showHtmlRes = yield fetch(itemUrl, { headers: { "User-Agent": NUVIO_UA } });
+            if (!showHtmlRes.ok)
               return [];
-            let dataLinkJson = JSON.parse(match[1]);
-            if (!Array.isArray(dataLinkJson)) {
-              dataLinkJson = Object.keys(dataLinkJson).map((lang) => ({
-                video_language: lang,
-                sortedEmbeds: dataLinkJson[lang]
-              }));
-            }
-            const LANG_PRIORITY = ["LAT"];
-            const LANG_LABELS = { "LAT": "Latino" };
-            for (const langCode of LANG_PRIORITY) {
-              const langData = dataLinkJson.find((item) => item.video_language === langCode);
-              if (!langData || !Array.isArray(langData.sortedEmbeds))
-                continue;
-              const streamPromises = langData.sortedEmbeds.map((embed) => __async(this, null, function* () {
-                if (!embed.link)
-                  return null;
-                try {
-                  const payload = decodeJwtPayload(embed.link);
-                  if (payload && payload.link) {
-                    const resolved = yield resolvers.resolve(embed.servername, payload.link);
-                    if (resolved && resolved.url) {
-                      const qualityLabel = resolved.verified ? `${resolved.quality} \u2705` : resolved.quality || "HD";
-                      const formatServer = (name) => {
-                        if (!name)
-                          return "Unknown";
-                        return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
-                      };
-                      return {
-                        name: `Embed69 - ${formatServer(embed.servername)}`,
-                        language: LANG_LABELS[langCode] || "Latino",
-                        quality: qualityLabel,
-                        url: resolved.url
-                      };
-                    }
-                  }
-                } catch (e) {
-                  return null;
-                }
-                return null;
-              }));
-              const results = (yield Promise.all(streamPromises)).filter((s) => s !== null);
-              if (results.length > 0) {
-                console.log(`[Embed69] \u2713 ${results.length} streams en ${langCode}`);
-                return results;
+            const showHtml = yield showHtmlRes.text();
+            const $s = cheerio.load(showHtml);
+            let epUrl = null;
+            $s(".episodios li a, .se-ep a, .episodios a").each((i, el) => {
+              const href = $s(el).attr("href");
+              const text = $s(el).text().trim();
+              if (href && (href.includes(`-${season}x${episode}-`) || text.includes(`${season}x${episode}`))) {
+                epUrl = href;
+              }
+            });
+            if (!epUrl) {
+              const slugMatch = itemUrl.match(/serie-tv-\d+\/(.*?)(?:-online-hd)?\/?$/);
+              if (slugMatch && slugMatch[1]) {
+                const slug = slugMatch[1].replace("-online-hd", "");
+                epUrl = `${baseURL}/episodios/${slug}-${season}x${episode}/`;
+                console.log(`[CineHDPlus] URL episodio inferida:`, epUrl);
               }
             }
-            return [];
-          } catch (error) {
-            return [];
+            if (!epUrl)
+              return [];
+            itemUrl = epUrl;
           }
-        });
-      }
-    };
-    module2.exports = extractor2;
+          return yield extractStreamsFromUrl(itemUrl);
+        } catch (e) {
+          console.error("[CineHDPlus] Error general:", e.message);
+          return [];
+        }
+      });
+    }
+    module2.exports = { getStreams: getStreams2 };
   }
 });
 
-// src/embed69/index.js
-var extractor = require_extractor();
-function getStreams(tmdbId, mediaType, season, episode) {
-  return __async(this, null, function* () {
-    try {
-      console.log(`[Latino TV] Iniciando b\xFAsqueda para TMDB: ${tmdbId}`);
-      const streams = yield extractor.getLinks(tmdbId, mediaType, season, episode);
-      return streams;
-    } catch (error) {
-      console.error(`[Latino TV Error]:`, error.message);
-      return [];
-    }
-  });
-}
-module.exports = { getStreams };
+// src/cinehdplus/index.js
+var { getStreams } = require_extractor();
+module.exports = {
+  getStreams
+};

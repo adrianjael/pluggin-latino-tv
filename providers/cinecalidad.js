@@ -1,24 +1,8 @@
 /**
- * embed69 - Plugin Nuvio
- * Generado: 2026-04-28T15:07:57.211Z
+ * cinecalidad - Plugin Nuvio
+ * Generado: 2026-04-28T15:07:57.172Z
  */
-var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
 var __commonJS = (cb, mod) => function __require() {
   return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
 };
@@ -43,45 +27,70 @@ var __async = (__this, __arguments, generator) => {
   });
 };
 
-// src/embed69/http.js
-var require_http = __commonJS({
-  "src/embed69/http.js"(exports2, module2) {
-    var http = {
-      get(_0) {
-        return __async(this, arguments, function* (url, headers = {}) {
-          try {
-            const response = yield fetch(url, {
-              method: "GET",
-              headers: __spreadValues({
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-              }, headers)
-            });
-            return yield response.text();
-          } catch (error) {
-            console.error(`[HTTP GET Error] ${url}:`, error.message);
-            throw error;
-          }
-        });
-      },
-      post(_0, _1) {
-        return __async(this, arguments, function* (url, data, headers = {}) {
-          try {
-            const response = yield fetch(url, {
-              method: "POST",
-              headers: __spreadValues({
-                "Content-Type": "application/x-www-form-urlencoded"
-              }, headers),
-              body: typeof data === "string" ? data : JSON.stringify(data)
-            });
-            return yield response.text();
-          } catch (error) {
-            console.error(`[HTTP POST Error] ${url}:`, error.message);
-            throw error;
-          }
-        });
-      }
-    };
-    module2.exports = http;
+// src/shared/utils/tmdb.js
+var require_tmdb = __commonJS({
+  "src/shared/utils/tmdb.js"(exports2, module2) {
+    function getTmdbApiKey() {
+      const settings = typeof globalThis !== "undefined" && globalThis.SCRAPER_SETTINGS || {};
+      const appKey = settings.tmdb_api_key || settings.tmdbApiKey || (typeof TMDB_API_KEY !== "undefined" ? TMDB_API_KEY : null);
+      return appKey || "439c478a771f35c05022f9feabcca01c";
+    }
+    function getImdbId(tmdbId, mediaType) {
+      return __async(this, null, function* () {
+        try {
+          const type = String(mediaType || "").toLowerCase().includes("movie") ? "movie" : "tv";
+          const apiKey = getTmdbApiKey();
+          const url = `https://api.themoviedb.org/3/${type}/${tmdbId}/external_ids?api_key=${apiKey}`;
+          console.log(`[TMDB] Consultando (${type}): ${tmdbId} usando API Key: ${apiKey.substring(0, 4)}...`);
+          const response = yield fetch(url, {
+            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" }
+          });
+          const data = yield response.json();
+          return data.imdb_id || null;
+        } catch (e) {
+          console.error("[TMDB] Error obteniendo IMDB ID:", e.message);
+          return null;
+        }
+      });
+    }
+    function getDetails(tmdbId, mediaType) {
+      return __async(this, null, function* () {
+        try {
+          const type = String(mediaType || "").toLowerCase().includes("movie") ? "movie" : "tv";
+          const apiKey = getTmdbApiKey();
+          const url = `https://api.themoviedb.org/3/${type}/${tmdbId}?api_key=${apiKey}&language=es-MX`;
+          console.log(`[TMDB] Detalles (${type}): ${tmdbId}`);
+          const response = yield fetch(url, {
+            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" }
+          });
+          if (!response.ok)
+            return null;
+          return yield response.json();
+        } catch (e) {
+          console.error("[TMDB] Error obteniendo detalles:", e.message);
+          return null;
+        }
+      });
+    }
+    function getTmdbAliases(tmdbId, mediaType) {
+      return __async(this, null, function* () {
+        try {
+          const type = String(mediaType || "").toLowerCase().includes("movie") ? "movie" : "tv";
+          const apiKey = getTmdbApiKey();
+          const url = `https://api.themoviedb.org/3/${type}/${tmdbId}/alternative_titles?api_key=${apiKey}`;
+          const response = yield fetch(url, {
+            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" }
+          });
+          const data = yield response.json();
+          const titles = data.titles || data.results || [];
+          return titles.map((t) => t.title || t.name);
+        } catch (e) {
+          console.error("[TMDB] Error obteniendo alias:", e.message);
+          return [];
+        }
+      });
+    }
+    module2.exports = { getImdbId, getDetails, getTmdbAliases };
   }
 });
 
@@ -765,184 +774,212 @@ var require_resolvers = __commonJS({
   }
 });
 
-// src/shared/utils/tmdb.js
-var require_tmdb = __commonJS({
-  "src/shared/utils/tmdb.js"(exports2, module2) {
-    function getTmdbApiKey() {
-      const settings = typeof globalThis !== "undefined" && globalThis.SCRAPER_SETTINGS || {};
-      const appKey = settings.tmdb_api_key || settings.tmdbApiKey || (typeof TMDB_API_KEY !== "undefined" ? TMDB_API_KEY : null);
-      return appKey || "439c478a771f35c05022f9feabcca01c";
-    }
-    function getImdbId(tmdbId, mediaType) {
-      return __async(this, null, function* () {
-        try {
-          const type = String(mediaType || "").toLowerCase().includes("movie") ? "movie" : "tv";
-          const apiKey = getTmdbApiKey();
-          const url = `https://api.themoviedb.org/3/${type}/${tmdbId}/external_ids?api_key=${apiKey}`;
-          console.log(`[TMDB] Consultando (${type}): ${tmdbId} usando API Key: ${apiKey.substring(0, 4)}...`);
-          const response = yield fetch(url, {
-            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" }
-          });
-          const data = yield response.json();
-          return data.imdb_id || null;
-        } catch (e) {
-          console.error("[TMDB] Error obteniendo IMDB ID:", e.message);
-          return null;
-        }
-      });
-    }
-    function getDetails(tmdbId, mediaType) {
-      return __async(this, null, function* () {
-        try {
-          const type = String(mediaType || "").toLowerCase().includes("movie") ? "movie" : "tv";
-          const apiKey = getTmdbApiKey();
-          const url = `https://api.themoviedb.org/3/${type}/${tmdbId}?api_key=${apiKey}&language=es-MX`;
-          console.log(`[TMDB] Detalles (${type}): ${tmdbId}`);
-          const response = yield fetch(url, {
-            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" }
-          });
-          if (!response.ok)
-            return null;
-          return yield response.json();
-        } catch (e) {
-          console.error("[TMDB] Error obteniendo detalles:", e.message);
-          return null;
-        }
-      });
-    }
-    function getTmdbAliases(tmdbId, mediaType) {
-      return __async(this, null, function* () {
-        try {
-          const type = String(mediaType || "").toLowerCase().includes("movie") ? "movie" : "tv";
-          const apiKey = getTmdbApiKey();
-          const url = `https://api.themoviedb.org/3/${type}/${tmdbId}/alternative_titles?api_key=${apiKey}`;
-          const response = yield fetch(url, {
-            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" }
-          });
-          const data = yield response.json();
-          const titles = data.titles || data.results || [];
-          return titles.map((t) => t.title || t.name);
-        } catch (e) {
-          console.error("[TMDB] Error obteniendo alias:", e.message);
-          return [];
-        }
-      });
-    }
-    module2.exports = { getImdbId, getDetails, getTmdbAliases };
-  }
-});
-
-// src/embed69/extractor.js
+// src/cinecalidad/extractor.js
 var require_extractor = __commonJS({
-  "src/embed69/extractor.js"(exports2, module2) {
-    var http = require_http();
-    var resolvers = require_resolvers();
+  "src/cinecalidad/extractor.js"(exports2, module2) {
+    var cheerio = require("cheerio");
     var tmdb = require_tmdb();
-    var { base64Decode } = require_base64();
-    function decodeJwtPayload(token) {
+    var resolvers = require_resolvers();
+    var HOST = "https://www.cinecalidad.vg";
+    var UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+    var HEADERS = {
+      "User-Agent": UA,
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "Accept-Language": "es-MX,es;q=0.9",
+      "Referer": HOST + "/"
+    };
+    function b64decode(str) {
       try {
-        const parts = token.split(".");
-        if (parts.length !== 3)
-          return null;
-        const base64Url = parts[1];
-        const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-        const jsonPayload = base64Decode(base64);
-        return JSON.parse(jsonPayload);
+        return atob(str);
       } catch (e) {
         return null;
       }
     }
-    var extractor2 = {
-      getLinks(id, type, season, episode) {
-        return __async(this, null, function* () {
-          let imdbId = id;
-          if (!String(id).startsWith("tt")) {
-            imdbId = yield tmdb.getImdbId(id, type);
-          }
-          if (!imdbId)
-            return [];
-          let urlId = imdbId;
-          if (type === "tv" && season && episode) {
-            const ep = String(episode).padStart(2, "0");
-            urlId = `${imdbId}-${season}x${ep}`;
-          }
-          const url = `https://embed69.org/f/${urlId}`;
-          console.log(`[Embed69] Navegando a: ${url}`);
+    function buildSlug(title) {
+      return title.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+    }
+    function getServerName(url) {
+      const lower = url.toLowerCase();
+      if (lower.includes("voe"))
+        return "VOE";
+      if (lower.includes("streamwish") || lower.includes("vibuxer") || lower.includes("hglink") || lower.includes("hlswish"))
+        return "StreamWish";
+      if (lower.includes("vidhide") || lower.includes("vidsrc"))
+        return "VidHide";
+      if (lower.includes("filemoon"))
+        return "Filemoon";
+      if (lower.includes("vimeos"))
+        return "Vimeos";
+      if (lower.includes("goodstream"))
+        return "GoodStream";
+      if (lower.includes("mixdrop"))
+        return "Mixdrop";
+      if (lower.includes("streamtape"))
+        return "Streamtape";
+      return "Online";
+    }
+    function getMovieBySlug(slug, year) {
+      return __async(this, null, function* () {
+        const slugs = [slug, `${slug}-2`, `${slug}-3`];
+        for (const s of slugs) {
+          const url = `${HOST}/pelicula/${s}/`;
           try {
-            const response = yield http.get(url);
-            const html = String(response);
-            const match = html.match(/let\s+dataLink\s*=\s*([\[\{][\s\S]*?[\]\}]);/);
-            if (!match)
-              return [];
-            let dataLinkJson = JSON.parse(match[1]);
-            if (!Array.isArray(dataLinkJson)) {
-              dataLinkJson = Object.keys(dataLinkJson).map((lang) => ({
-                video_language: lang,
-                sortedEmbeds: dataLinkJson[lang]
-              }));
-            }
-            const LANG_PRIORITY = ["LAT"];
-            const LANG_LABELS = { "LAT": "Latino" };
-            for (const langCode of LANG_PRIORITY) {
-              const langData = dataLinkJson.find((item) => item.video_language === langCode);
-              if (!langData || !Array.isArray(langData.sortedEmbeds))
-                continue;
-              const streamPromises = langData.sortedEmbeds.map((embed) => __async(this, null, function* () {
-                if (!embed.link)
-                  return null;
-                try {
-                  const payload = decodeJwtPayload(embed.link);
-                  if (payload && payload.link) {
-                    const resolved = yield resolvers.resolve(embed.servername, payload.link);
-                    if (resolved && resolved.url) {
-                      const qualityLabel = resolved.verified ? `${resolved.quality} \u2705` : resolved.quality || "HD";
-                      const formatServer = (name) => {
-                        if (!name)
-                          return "Unknown";
-                        return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
-                      };
-                      return {
-                        name: `Embed69 - ${formatServer(embed.servername)}`,
-                        language: LANG_LABELS[langCode] || "Latino",
-                        quality: qualityLabel,
-                        url: resolved.url
-                      };
-                    }
-                  }
-                } catch (e) {
-                  return null;
+            const res = yield fetch(url, { headers: HEADERS });
+            if (res.ok) {
+              const html = yield res.text();
+              if (html.includes('data-src="')) {
+                if (year) {
+                  const yearMatch = html.match(/\((\d{4})\)/);
+                  if (yearMatch && yearMatch[1] === year)
+                    return url;
+                } else {
+                  return url;
                 }
-                return null;
-              }));
-              const results = (yield Promise.all(streamPromises)).filter((s) => s !== null);
-              if (results.length > 0) {
-                console.log(`[Embed69] \u2713 ${results.length} streams en ${langCode}`);
-                return results;
               }
             }
+          } catch (e) {
+          }
+        }
+        return null;
+      });
+    }
+    function searchInSite(query) {
+      return __async(this, null, function* () {
+        try {
+          const url = `${HOST}/?s=${encodeURIComponent(query)}`;
+          const res = yield fetch(url, { headers: HEADERS });
+          if (!res.ok)
             return [];
-          } catch (error) {
+          const html = yield res.text();
+          const $ = cheerio.load(html);
+          const results = [];
+          $("a").each((i, el) => {
+            const href = $(el).attr("href");
+            if (href && href.includes("/pelicula/") && !results.includes(href)) {
+              results.push(href);
+            }
+          });
+          return results;
+        } catch (e) {
+          return [];
+        }
+      });
+    }
+    function extractStreams(movieUrl) {
+      return __async(this, null, function* () {
+        try {
+          console.log(`[CineCalidad] Extrayendo de: ${movieUrl}`);
+          const res = yield fetch(movieUrl, { headers: HEADERS });
+          if (!res.ok)
+            return [];
+          const html = yield res.text();
+          const embedUrls = /* @__PURE__ */ new Set();
+          const b64Regex = /data-src="([A-Za-z0-9+/=]{20,})"/g;
+          let match;
+          while ((match = b64Regex.exec(html)) !== null) {
+            const decoded = b64decode(match[1]);
+            if (decoded && decoded.startsWith("http")) {
+              embedUrls.add(decoded);
+            }
+          }
+          const finalUrls = [];
+          for (const url of embedUrls) {
+            if (url.includes("cinecalidad") && url.includes("?id=")) {
+              try {
+                const midRes = yield fetch(url, { headers: HEADERS });
+                if (midRes.ok) {
+                  const midHtml = yield midRes.text();
+                  const btnMatch = midHtml.match(/id="btn_enlace"[^>]*href="([^"]+)"/);
+                  if (btnMatch)
+                    finalUrls.push(btnMatch[1]);
+                  else {
+                    const iframeMatch = midHtml.match(/<iframe[^>]+src="([^"]+)"/);
+                    if (iframeMatch)
+                      finalUrls.push(iframeMatch[1]);
+                  }
+                }
+              } catch (e) {
+              }
+            } else {
+              finalUrls.push(url);
+            }
+          }
+          const streams = [];
+          for (const url of finalUrls) {
+            const serverName = getServerName(url);
+            console.log(`[CineCalidad] Resolviendo ${serverName}: ${url}`);
+            try {
+              const resolved = yield resolvers.resolve(serverName, url);
+              if (resolved && resolved.url) {
+                streams.push({
+                  name: serverName,
+                  url: resolved.url,
+                  quality: resolved.quality || "HD",
+                  language: "Latino",
+                  headers: resolved.headers || { "User-Agent": UA, "Referer": HOST + "/" }
+                });
+              }
+            } catch (e) {
+              console.error(`[CineCalidad] Error resolviendo ${url}:`, e.message);
+            }
+          }
+          return streams;
+        } catch (e) {
+          console.error("[CineCalidad] Error extrayendo streams:", e.message);
+          return [];
+        }
+      });
+    }
+    function getStreams(tmdbId, mediaType, season, episode) {
+      return __async(this, null, function* () {
+        if (mediaType === "tv")
+          return [];
+        try {
+          const details = yield tmdb.getDetails(tmdbId, mediaType);
+          if (!details)
+            return [];
+          const title = details.title || details.original_title;
+          const year = (details.release_date || "").substring(0, 4);
+          console.log(`[CineCalidad] Buscando pel\xEDcula: ${title} (${year})`);
+          let movieUrl = yield getMovieBySlug(buildSlug(title), year);
+          if (!movieUrl) {
+            const searchResults = yield searchInSite(title);
+            if (searchResults.length > 0)
+              movieUrl = searchResults[0];
+          }
+          if (!movieUrl) {
+            console.log(`[CineCalidad] T\xEDtulo no encontrado, probando alias de TMDB...`);
+            const aliases = yield tmdb.getTmdbAliases(tmdbId, mediaType);
+            const filteredAliases = aliases.filter((a) => /^[a-zA-Z0-9\s\-\:\.\,¡!¿?áéíóúÁÉÍÓÚñÑ]+$/.test(a)).filter((a) => a.toLowerCase() !== title.toLowerCase()).slice(0, 5);
+            for (const alias of filteredAliases) {
+              console.log(`[CineCalidad] Probando alias: ${alias}`);
+              movieUrl = yield getMovieBySlug(buildSlug(alias), year);
+              if (movieUrl)
+                break;
+              const aliasResults = yield searchInSite(alias);
+              if (aliasResults.length > 0) {
+                movieUrl = aliasResults[0];
+                break;
+              }
+            }
+          }
+          if (!movieUrl) {
+            console.log(`[CineCalidad] No se encontr\xF3 la pel\xEDcula.`);
             return [];
           }
-        });
-      }
-    };
-    module2.exports = extractor2;
+          return yield extractStreams(movieUrl);
+        } catch (e) {
+          console.error("[CineCalidad] Error general:", e.message);
+          return [];
+        }
+      });
+    }
+    module2.exports = { getStreams };
   }
 });
 
-// src/embed69/index.js
+// src/cinecalidad/index.js
 var extractor = require_extractor();
-function getStreams(tmdbId, mediaType, season, episode) {
-  return __async(this, null, function* () {
-    try {
-      console.log(`[Latino TV] Iniciando b\xFAsqueda para TMDB: ${tmdbId}`);
-      const streams = yield extractor.getLinks(tmdbId, mediaType, season, episode);
-      return streams;
-    } catch (error) {
-      console.error(`[Latino TV Error]:`, error.message);
-      return [];
-    }
-  });
-}
-module.exports = { getStreams };
+module.exports = {
+  getStreams: extractor.getStreams
+};

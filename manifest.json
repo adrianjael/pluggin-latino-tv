@@ -43,6 +43,26 @@
             "contentLanguage": [
                 "es"
             ]
+        },
+        {
+            "id": "cinecalidad",
+            "name": "CineCalidad",
+            "description": "Películas Latino - Alta Calidad (Voe, StreamWish, Filemoon)",
+            "version": "1.0.0",
+            "author": "AdrianJael",
+            "supportedTypes": [
+                "movie"
+            ],
+            "filename": "providers/cinecalidad.js",
+            "enabled": true,
+            "formats": [
+                "mp4",
+                "m3u8"
+            ],
+            "logo": "https://www.cinecalidad.vg/favicon.ico",
+            "contentLanguage": [
+                "es"
+            ]
         }
     ]
 }

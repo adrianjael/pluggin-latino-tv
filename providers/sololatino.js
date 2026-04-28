@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-27T22:55:14.901Z
+ * Generado: 2026-04-28T15:07:57.219Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -91,7 +91,25 @@ var require_tmdb = __commonJS({
         }
       });
     }
-    module2.exports = { getImdbId, getDetails };
+    function getTmdbAliases(tmdbId, mediaType) {
+      return __async(this, null, function* () {
+        try {
+          const type = String(mediaType || "").toLowerCase().includes("movie") ? "movie" : "tv";
+          const apiKey = getTmdbApiKey();
+          const url = `https://api.themoviedb.org/3/${type}/${tmdbId}/alternative_titles?api_key=${apiKey}`;
+          const response = yield fetch(url, {
+            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" }
+          });
+          const data = yield response.json();
+          const titles = data.titles || data.results || [];
+          return titles.map((t) => t.title || t.name);
+        } catch (e) {
+          console.error("[TMDB] Error obteniendo alias:", e.message);
+          return [];
+        }
+      });
+    }
+    module2.exports = { getImdbId, getDetails, getTmdbAliases };
   }
 });
 
