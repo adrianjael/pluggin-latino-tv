@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-28T15:39:32.935Z
+ * Generado: 2026-04-28T15:49:58.271Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -612,9 +612,11 @@ var require_goodstream = __commonJS({
               "Connection": "keep-alive"
             }
           });
+          console.log(`[GoodStream] Status: ${response.status}`);
           if (!response.ok)
             return null;
           const html = yield response.text();
+          console.log(`[GoodStream] HTML Length: ${html.length}`);
           let videoUrl = null;
           const fileMatch = html.match(/file:\s*"([^"]+)"/);
           if (fileMatch) {
@@ -630,7 +632,7 @@ var require_goodstream = __commonJS({
             }
           }
           if (videoUrl) {
-            console.log(`[Resolvers] GoodStream Success!`);
+            console.log(`[Resolvers] GoodStream Success! URL: ${videoUrl.substring(0, 50)}...`);
             return {
               url: videoUrl,
               quality: "1080p",
@@ -639,7 +641,10 @@ var require_goodstream = __commonJS({
                 "Referer": url,
                 "Origin": origin,
                 "User-Agent": USER_AGENT,
-                "Accept-Language": "es-MX,es;q=0.9"
+                "Accept-Language": "es-MX,es;q=0.9",
+                "Sec-Fetch-Mode": "cors",
+                "Sec-Fetch-Site": "cross-site",
+                "Sec-Fetch-Dest": "empty"
               }
             };
           }

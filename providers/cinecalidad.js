@@ -1,6 +1,6 @@
 /**
  * cinecalidad - Plugin Nuvio
- * Generado: 2026-04-28T15:39:32.888Z
+ * Generado: 2026-04-28T15:49:58.233Z
  */
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __commonJS = (cb, mod) => function __require() {
@@ -621,9 +621,11 @@ var require_goodstream = __commonJS({
               "Connection": "keep-alive"
             }
           });
+          console.log(`[GoodStream] Status: ${response.status}`);
           if (!response.ok)
             return null;
           const html = yield response.text();
+          console.log(`[GoodStream] HTML Length: ${html.length}`);
           let videoUrl = null;
           const fileMatch = html.match(/file:\s*"([^"]+)"/);
           if (fileMatch) {
@@ -639,7 +641,7 @@ var require_goodstream = __commonJS({
             }
           }
           if (videoUrl) {
-            console.log(`[Resolvers] GoodStream Success!`);
+            console.log(`[Resolvers] GoodStream Success! URL: ${videoUrl.substring(0, 50)}...`);
             return {
               url: videoUrl,
               quality: "1080p",
@@ -648,7 +650,10 @@ var require_goodstream = __commonJS({
                 "Referer": url,
                 "Origin": origin,
                 "User-Agent": USER_AGENT,
-                "Accept-Language": "es-MX,es;q=0.9"
+                "Accept-Language": "es-MX,es;q=0.9",
+                "Sec-Fetch-Mode": "cors",
+                "Sec-Fetch-Site": "cross-site",
+                "Sec-Fetch-Dest": "empty"
               }
             };
           }
@@ -1013,6 +1018,7 @@ var require_extractor = __commonJS({
           if (!details)
             return [];
           const title = details.title || details.original_title;
+          const originalTitle = details.original_title;
           const year = (details.release_date || "").substring(0, 4);
           console.log(`[CineCalidad] Buscando pel\xEDcula: ${title} (${year})`);
           let movieUrl = yield getMovieBySlug(buildSlug(title), year);
@@ -1020,6 +1026,15 @@ var require_extractor = __commonJS({
             const searchResults = yield searchInSite(title);
             if (searchResults.length > 0)
               movieUrl = searchResults[0];
+          }
+          if (!movieUrl && originalTitle && originalTitle !== title) {
+            console.log(`[CineCalidad] T\xEDtulo latino no encontrado, probando t\xEDtulo original: ${originalTitle}`);
+            movieUrl = yield getMovieBySlug(buildSlug(originalTitle), year);
+            if (!movieUrl) {
+              const origResults = yield searchInSite(originalTitle);
+              if (origResults.length > 0)
+                movieUrl = origResults[0];
+            }
           }
           if (!movieUrl) {
             console.log(`[CineCalidad] T\xEDtulo no encontrado, probando alias de TMDB...`);
