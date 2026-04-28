@@ -1,6 +1,6 @@
 /**
  * cinecalidad - Plugin Nuvio
- * Generado: 2026-04-28T20:40:46.543Z
+ * Generado: 2026-04-28T22:39:55.045Z
  */
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __commonJS = (cb, mod) => function __require() {

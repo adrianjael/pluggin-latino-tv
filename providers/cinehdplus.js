@@ -1,6 +1,6 @@
 /**
  * cinehdplus - Plugin Nuvio
- * Generado: 2026-04-28T20:40:46.601Z
+ * Generado: 2026-04-28T22:39:55.101Z
  */
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __commonJS = (cb, mod) => function __require() {

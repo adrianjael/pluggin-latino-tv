@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-28T20:40:46.608Z
+ * Generado: 2026-04-28T22:39:55.111Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -958,12 +958,12 @@ var require_extractor = __commonJS({
               urlId = `${imdbId}-${season}x${ep}`;
             }
             const url = `https://embed69.org/f/${urlId}`;
-            console.log(`[Embed69] Buscando en: ${url}`);
+            console.log(`[Embed69] Buscando: ${url}`);
             const response = yield http.get(url);
             const html = String(response);
             const match = html.match(/(?:let|const|var)\s+dataLink\s*=\s*([\[\{][\s\S]*?[\]\}]);/);
             if (!match) {
-              console.log("[Embed69] Error: dataLink no encontrado.");
+              console.log("[Embed69] dataLink no encontrado.");
               return [];
             }
             let dataLinkJson = JSON.parse(match[1]);
@@ -973,40 +973,38 @@ var require_extractor = __commonJS({
                 sortedEmbeds: dataLinkJson[lang]
               }));
             }
-            const allResults = [];
-            const LANG_MAP = { "LAT": "Latino", "ESP": "Castellano", "SUB": "Subtitulado" };
-            for (const langData of dataLinkJson) {
-              const langCode = langData.video_language;
-              const embeds = langData.sortedEmbeds;
-              if (!embeds || !Array.isArray(embeds))
-                continue;
-              console.log(`[Embed69] Procesando idioma: ${langCode} (${embeds.length} servers)`);
-              for (const embed of embeds) {
-                if (!embed.link || embed.servername === "download")
-                  continue;
-                try {
-                  const payload = decodeJwtPayload(embed.link);
-                  if (payload && payload.link) {
-                    const resolved = yield resolvers.resolve(embed.servername, payload.link);
-                    if (resolved && resolved.url) {
-                      allResults.push({
-                        name: `Embed69 - ${embed.servername.charAt(0).toUpperCase() + embed.servername.slice(1).toLowerCase()}`,
-                        language: LANG_MAP[langCode] || langCode,
-                        quality: resolved.verified ? `${resolved.quality} \u2705` : resolved.quality || "HD",
-                        url: resolved.url,
-                        headers: resolved.headers
-                      });
-                    }
-                  }
-                } catch (err) {
-                  console.error(`[Embed69] Error resolviendo ${embed.servername}:`, err.message);
-                }
-              }
+            const latData = dataLinkJson.find((item) => item.video_language === "LAT");
+            if (!latData || !Array.isArray(latData.sortedEmbeds)) {
+              console.log("[Embed69] No hay streams en Latino.");
+              return [];
             }
-            console.log(`[Embed69] Total: ${allResults.length} resultados.`);
-            return allResults;
+            const embeds = latData.sortedEmbeds.filter((e) => e.link && e.servername !== "download");
+            console.log(`[Embed69] Procesando ${embeds.length} servidores Latino en paralelo...`);
+            const resolvePromises = embeds.map((embed) => __async(this, null, function* () {
+              try {
+                const payload = decodeJwtPayload(embed.link);
+                if (!payload || !payload.link)
+                  return null;
+                const resolved = yield resolvers.resolve(embed.servername, payload.link);
+                if (!resolved || !resolved.url)
+                  return null;
+                return {
+                  name: `Embed69 - ${embed.servername.charAt(0).toUpperCase() + embed.servername.slice(1).toLowerCase()}`,
+                  language: "Latino",
+                  quality: resolved.verified ? `${resolved.quality} \u2705` : resolved.quality || "HD",
+                  url: resolved.url,
+                  headers: resolved.headers
+                };
+              } catch (e) {
+                return null;
+              }
+            }));
+            const results = yield Promise.allSettled(resolvePromises);
+            const streams = results.filter((r) => r.status === "fulfilled" && r.value !== null).map((r) => r.value);
+            console.log(`[Embed69] \u2713 ${streams.length} streams Latino encontrados.`);
+            return streams;
           } catch (error) {
-            console.error("[Embed69] Error cr\xEDtico:", error.message);
+            console.error("[Embed69] Error:", error.message);
             return [];
           }
         });
