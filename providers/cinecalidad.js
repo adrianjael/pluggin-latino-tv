@@ -1,6 +1,6 @@
 /**
  * cinecalidad - Plugin Nuvio
- * Generado: 2026-04-28T15:36:59.283Z
+ * Generado: 2026-04-28T15:39:32.888Z
  */
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __commonJS = (cb, mod) => function __require() {
@@ -615,7 +615,7 @@ var require_goodstream = __commonJS({
           const response = yield fetch(url, {
             headers: {
               "User-Agent": USER_AGENT,
-              "Referer": "https://www.cinecalidad.vg/",
+              "Referer": origin + "/",
               "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
               "Accept-Language": "es-MX,es;q=0.9",
               "Connection": "keep-alive"
@@ -645,11 +645,10 @@ var require_goodstream = __commonJS({
               quality: "1080p",
               verified: true,
               headers: {
-                "Referer": origin + "/",
+                "Referer": url,
                 "Origin": origin,
                 "User-Agent": USER_AGENT,
-                "Accept": "*/*",
-                "Accept-Language": "es-MX,es;q=0.9,en;q=0.8"
+                "Accept-Language": "es-MX,es;q=0.9"
               }
             };
           }
