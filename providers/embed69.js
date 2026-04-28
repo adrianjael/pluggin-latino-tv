@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-28T15:07:57.211Z
+ * Generado: 2026-04-28T15:16:04.603Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -464,25 +464,36 @@ var require_filemoon = __commonJS({
           }
           console.log(`[Resolvers] Filemoon Fallback: Buscando Packer...`);
           let response = yield fetch(url, {
-            headers: { "User-Agent": USER_AGENT, "Referer": "https://embed69.org/" }
+            headers: {
+              "User-Agent": USER_AGENT,
+              "Referer": "https://www.cinecalidad.vg/"
+            }
           });
           let html = yield response.text();
+          const directMatch = html.match(/(?:file|source|src|hls|url)\s*[:=]\s*["']([^"']+\.(?:m3u8|mp4)[^"']*)["']/i);
+          if (directMatch) {
+            console.log(`[Resolvers] Filemoon Direct Match Success!`);
+            return { url: directMatch[1], quality: "Auto", headers: { "Referer": url, "User-Agent": USER_AGENT } };
+          }
           const evalMatch = html.match(/eval\(function\(p,a,c,k,e,[rd]\)[\s\S]*?\.split\('\|'\)[^\)]*\)\)/g);
           let contentToSearch = html;
           if (evalMatch) {
             evalMatch.forEach((m) => {
               try {
-                contentToSearch += "\n" + unpack(m);
+                const unpacked = unpack(m);
+                if (unpacked)
+                  contentToSearch += "\n" + unpacked;
               } catch (e) {
               }
             });
           }
           const fileMatch = contentToSearch.match(/(?:file|source|src|hls|url)\s*[:=]\s*["']([^"']+\.(?:m3u8|mp4)[^"']*)["']/i);
           if (fileMatch) {
+            console.log(`[Resolvers] Filemoon Packer Success!`);
             return {
               url: fileMatch[1],
               quality: "Auto",
-              headers: { "Referer": url }
+              headers: { "Referer": url, "User-Agent": USER_AGENT }
             };
           }
           return null;
@@ -578,6 +589,65 @@ var require_streamtape = __commonJS({
       });
     }
     module2.exports = resolveStreamtape;
+  }
+});
+
+// src/shared/resolvers/goodstream.js
+var require_goodstream = __commonJS({
+  "src/shared/resolvers/goodstream.js"(exports2, module2) {
+    var { unpack } = require_unpacker();
+    var USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+    function resolveGoodstream(url) {
+      return __async(this, null, function* () {
+        try {
+          console.log(`[Resolvers] Resolviendo GoodStream/Vimeos: ${url}`);
+          const origin = new URL(url).origin;
+          const response = yield fetch(url, {
+            headers: {
+              "User-Agent": USER_AGENT,
+              "Referer": origin + "/",
+              "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+            }
+          });
+          if (!response.ok)
+            return null;
+          const html = yield response.text();
+          let videoUrl = null;
+          const fileMatch = html.match(/file:\s*"([^"]+)"/);
+          if (fileMatch) {
+            videoUrl = fileMatch[1];
+          }
+          if (!videoUrl) {
+            const evalMatch = html.match(/eval\(function\(p,a,c,k,e,[rd]\)[\s\S]*?\.split\('\|'\)[^\)]*\)\)/);
+            if (evalMatch) {
+              const unpacked = unpack(evalMatch[0]);
+              const innerMatch = unpacked.match(/(?:file|source|src)\s*:\s*["']([^"']+\.(?:m3u8|mp4)[^"']*)["']/i);
+              if (innerMatch)
+                videoUrl = innerMatch[1];
+            }
+          }
+          if (videoUrl) {
+            console.log(`[Resolvers] GoodStream Success!`);
+            return {
+              url: videoUrl,
+              quality: "1080p",
+              verified: true,
+              headers: {
+                "Referer": url,
+                "Origin": origin,
+                "User-Agent": USER_AGENT,
+                "Accept-Language": "es-MX,es;q=0.9"
+              }
+            };
+          }
+          return null;
+        } catch (e) {
+          console.error(`[Resolvers] Error en GoodStream: ${e.message}`);
+          return null;
+        }
+      });
+    }
+    module2.exports = resolveGoodstream;
   }
 });
 
@@ -729,6 +799,7 @@ var require_resolvers = __commonJS({
     var resolveVoe = require_voe();
     var resolveFilemoon = require_filemoon();
     var resolveStreamtape = require_streamtape();
+    var resolveGoodstream = require_goodstream();
     var resolveGenericPacker = require_generic_packer();
     var m3u8Parser = require_m3u8();
     var registry = {
@@ -737,8 +808,8 @@ var require_resolvers = __commonJS({
       filemoon: resolveFilemoon,
       voe: resolveVoe,
       streamtape: resolveStreamtape,
-      vimeos: resolveGenericPacker,
-      goodstream: resolveGenericPacker
+      vimeos: resolveGoodstream,
+      goodstream: resolveGoodstream
     };
     function resolve(servername, url) {
       return __async(this, null, function* () {

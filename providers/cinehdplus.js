@@ -1,6 +1,6 @@
 /**
  * cinehdplus - Plugin Nuvio
- * Generado: 2026-04-28T15:07:57.203Z
+ * Generado: 2026-04-28T15:16:04.594Z
  */
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __commonJS = (cb, mod) => function __require() {
@@ -473,25 +473,36 @@ var require_filemoon = __commonJS({
           }
           console.log(`[Resolvers] Filemoon Fallback: Buscando Packer...`);
           let response = yield fetch(url, {
-            headers: { "User-Agent": USER_AGENT, "Referer": "https://embed69.org/" }
+            headers: {
+              "User-Agent": USER_AGENT,
+              "Referer": "https://www.cinecalidad.vg/"
+            }
           });
           let html = yield response.text();
+          const directMatch = html.match(/(?:file|source|src|hls|url)\s*[:=]\s*["']([^"']+\.(?:m3u8|mp4)[^"']*)["']/i);
+          if (directMatch) {
+            console.log(`[Resolvers] Filemoon Direct Match Success!`);
+            return { url: directMatch[1], quality: "Auto", headers: { "Referer": url, "User-Agent": USER_AGENT } };
+          }
           const evalMatch = html.match(/eval\(function\(p,a,c,k,e,[rd]\)[\s\S]*?\.split\('\|'\)[^\)]*\)\)/g);
           let contentToSearch = html;
           if (evalMatch) {
             evalMatch.forEach((m) => {
               try {
-                contentToSearch += "\n" + unpack(m);
+                const unpacked = unpack(m);
+                if (unpacked)
+                  contentToSearch += "\n" + unpacked;
               } catch (e) {
               }
             });
           }
           const fileMatch = contentToSearch.match(/(?:file|source|src|hls|url)\s*[:=]\s*["']([^"']+\.(?:m3u8|mp4)[^"']*)["']/i);
           if (fileMatch) {
+            console.log(`[Resolvers] Filemoon Packer Success!`);
             return {
               url: fileMatch[1],
               quality: "Auto",
-              headers: { "Referer": url }
+              headers: { "Referer": url, "User-Agent": USER_AGENT }
             };
           }
           return null;
