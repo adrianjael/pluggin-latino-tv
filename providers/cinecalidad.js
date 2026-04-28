@@ -1,6 +1,6 @@
 /**
  * cinecalidad - Plugin Nuvio
- * Generado: 2026-04-28T16:05:17.532Z
+ * Generado: 2026-04-28T16:51:14.871Z
  */
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __commonJS = (cb, mod) => function __require() {
@@ -435,39 +435,44 @@ var require_filemoon = __commonJS({
           if (!videoId)
             return null;
           try {
-            const playbackUrl = `https://${hostname}/api/videos/${videoId}/embed/playback`;
-            console.log(`[Resolvers] Filemoon consultando API Playback...`);
-            const response2 = yield fetch(playbackUrl, {
-              headers: {
-                "User-Agent": USER_AGENT,
-                "Referer": url,
-                "Origin": `https://${hostname}`,
-                "X-Embed-Parent": url,
-                "Accept": "application/json"
-              }
-            });
-            if (response2.ok) {
-              const playbackData = yield response2.json();
-              if (playbackData && playbackData.playback) {
-                const decrypted = decryptByse(playbackData.playback);
-                if (decrypted) {
-                  const data = JSON.parse(decrypted);
-                  const directUrl = ((_b = (_a = data == null ? void 0 : data.sources) == null ? void 0 : _a[0]) == null ? void 0 : _b.url) || (data == null ? void 0 : data.url);
-                  if (directUrl) {
-                    console.log(`[Resolvers] Filemoon Shield Success!`);
-                    return {
-                      url: directUrl,
-                      quality: ((_d = (_c = data == null ? void 0 : data.sources) == null ? void 0 : _c[0]) == null ? void 0 : _d.label) || "1080p",
-                      verified: true,
-                      headers: {
-                        "User-Agent": USER_AGENT,
-                        "Referer": `https://${hostname}/`,
-                        "Origin": `https://${hostname}`
-                      }
-                    };
+            const hasAES = typeof CryptoJS !== "undefined" && !!CryptoJS.AES;
+            if (hasAES) {
+              const playbackUrl = `https://${hostname}/api/videos/${videoId}/embed/playback`;
+              console.log(`[Resolvers] Filemoon consultando API Playback...`);
+              const response2 = yield fetch(playbackUrl, {
+                headers: {
+                  "User-Agent": USER_AGENT,
+                  "Referer": url,
+                  "Origin": `https://${hostname}`,
+                  "X-Embed-Parent": url,
+                  "Accept": "application/json"
+                }
+              });
+              if (response2.ok) {
+                const playbackData = yield response2.json();
+                if (playbackData && playbackData.playback) {
+                  const decrypted = decryptByse(playbackData.playback);
+                  if (decrypted) {
+                    const data = JSON.parse(decrypted);
+                    const directUrl = ((_b = (_a = data == null ? void 0 : data.sources) == null ? void 0 : _a[0]) == null ? void 0 : _b.url) || (data == null ? void 0 : data.url);
+                    if (directUrl) {
+                      console.log(`[Resolvers] Filemoon Shield Success!`);
+                      return {
+                        url: directUrl,
+                        quality: ((_d = (_c = data == null ? void 0 : data.sources) == null ? void 0 : _c[0]) == null ? void 0 : _d.label) || "1080p",
+                        verified: true,
+                        headers: {
+                          "User-Agent": USER_AGENT,
+                          "Referer": `https://${hostname}/`,
+                          "Origin": `https://${hostname}`
+                        }
+                      };
+                    }
                   }
                 }
               }
+            } else {
+              console.log(`[Resolvers] Filemoon Shield omitido: CryptoJS.AES no disponible.`);
             }
           } catch (e) {
             console.log(`[Resolvers] Filemoon Shield Fall\xF3: ${e.message}`);
@@ -605,23 +610,22 @@ var require_streamtape = __commonJS({
 // src/shared/resolvers/goodstream.js
 var require_goodstream = __commonJS({
   "src/shared/resolvers/goodstream.js"(exports2, module2) {
-    var USER_AGENT = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36";
+    var USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
     function resolveGoodstream(url) {
       return __async(this, null, function* () {
         try {
-          console.log(`[Resolvers] Resolviendo GoodStream (User-Headers Mode): ${url}`);
+          console.log(`[Resolvers] Resolviendo GoodStream (Nuvio-UA Mode): ${url}`);
           const origin = new URL(url).origin;
           const response = yield fetch(url, {
-            skipSizeCheck: true,
             headers: {
               "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
               "accept-language": "es-ES,es;q=0.9",
               "cache-control": "no-cache",
               "pragma": "no-cache",
               "priority": "u=0, i",
-              "sec-ch-ua": '"Google Chrome";v="147", "Not.A/Brand";v="8", "Chromium";v="147"',
-              "sec-ch-ua-mobile": "?1",
-              "sec-ch-ua-platform": '"Android"',
+              "sec-ch-ua": '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+              "sec-ch-ua-mobile": "?0",
+              "sec-ch-ua-platform": '"Windows"',
               "sec-fetch-dest": "document",
               "sec-fetch-mode": "navigate",
               "sec-fetch-site": "cross-site",
@@ -647,12 +651,11 @@ var require_goodstream = __commonJS({
               quality: "1080p",
               verified: true,
               headers: {
-                "sec-ch-ua": '"Google Chrome";v="147", "Not.A/Brand";v="8", "Chromium";v="147"',
-                "sec-ch-ua-mobile": "?1",
-                "sec-ch-ua-platform": '"Android"',
+                "sec-ch-ua": '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+                "sec-ch-ua-mobile": "?0",
+                "sec-ch-ua-platform": '"Windows"',
                 "Referer": origin + "/",
-                "User-Agent": USER_AGENT,
-                "skipSizeCheck": "true"
+                "User-Agent": USER_AGENT
               }
             };
           }

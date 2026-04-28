@@ -1,6 +1,6 @@
 /**
  * cinehdplus - Plugin Nuvio
- * Generado: 2026-04-28T16:05:17.568Z
+ * Generado: 2026-04-28T16:51:14.903Z
  */
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __commonJS = (cb, mod) => function __require() {
@@ -435,39 +435,44 @@ var require_filemoon = __commonJS({
           if (!videoId)
             return null;
           try {
-            const playbackUrl = `https://${hostname}/api/videos/${videoId}/embed/playback`;
-            console.log(`[Resolvers] Filemoon consultando API Playback...`);
-            const response2 = yield fetch(playbackUrl, {
-              headers: {
-                "User-Agent": USER_AGENT,
-                "Referer": url,
-                "Origin": `https://${hostname}`,
-                "X-Embed-Parent": url,
-                "Accept": "application/json"
-              }
-            });
-            if (response2.ok) {
-              const playbackData = yield response2.json();
-              if (playbackData && playbackData.playback) {
-                const decrypted = decryptByse(playbackData.playback);
-                if (decrypted) {
-                  const data = JSON.parse(decrypted);
-                  const directUrl = ((_b = (_a = data == null ? void 0 : data.sources) == null ? void 0 : _a[0]) == null ? void 0 : _b.url) || (data == null ? void 0 : data.url);
-                  if (directUrl) {
-                    console.log(`[Resolvers] Filemoon Shield Success!`);
-                    return {
-                      url: directUrl,
-                      quality: ((_d = (_c = data == null ? void 0 : data.sources) == null ? void 0 : _c[0]) == null ? void 0 : _d.label) || "1080p",
-                      verified: true,
-                      headers: {
-                        "User-Agent": USER_AGENT,
-                        "Referer": `https://${hostname}/`,
-                        "Origin": `https://${hostname}`
-                      }
-                    };
+            const hasAES = typeof CryptoJS !== "undefined" && !!CryptoJS.AES;
+            if (hasAES) {
+              const playbackUrl = `https://${hostname}/api/videos/${videoId}/embed/playback`;
+              console.log(`[Resolvers] Filemoon consultando API Playback...`);
+              const response2 = yield fetch(playbackUrl, {
+                headers: {
+                  "User-Agent": USER_AGENT,
+                  "Referer": url,
+                  "Origin": `https://${hostname}`,
+                  "X-Embed-Parent": url,
+                  "Accept": "application/json"
+                }
+              });
+              if (response2.ok) {
+                const playbackData = yield response2.json();
+                if (playbackData && playbackData.playback) {
+                  const decrypted = decryptByse(playbackData.playback);
+                  if (decrypted) {
+                    const data = JSON.parse(decrypted);
+                    const directUrl = ((_b = (_a = data == null ? void 0 : data.sources) == null ? void 0 : _a[0]) == null ? void 0 : _b.url) || (data == null ? void 0 : data.url);
+                    if (directUrl) {
+                      console.log(`[Resolvers] Filemoon Shield Success!`);
+                      return {
+                        url: directUrl,
+                        quality: ((_d = (_c = data == null ? void 0 : data.sources) == null ? void 0 : _c[0]) == null ? void 0 : _d.label) || "1080p",
+                        verified: true,
+                        headers: {
+                          "User-Agent": USER_AGENT,
+                          "Referer": `https://${hostname}/`,
+                          "Origin": `https://${hostname}`
+                        }
+                      };
+                    }
                   }
                 }
               }
+            } else {
+              console.log(`[Resolvers] Filemoon Shield omitido: CryptoJS.AES no disponible.`);
             }
           } catch (e) {
             console.log(`[Resolvers] Filemoon Shield Fall\xF3: ${e.message}`);
