@@ -1,6 +1,6 @@
 /**
  * cinecalidad - Plugin Nuvio
- * Generado: 2026-04-28T15:49:58.233Z
+ * Generado: 2026-04-28T15:54:00.359Z
  */
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __commonJS = (cb, mod) => function __require() {
@@ -613,19 +613,28 @@ var require_goodstream = __commonJS({
           console.log(`[Resolvers] Resolviendo GoodStream/Vimeos: ${url}`);
           const origin = new URL(url).origin;
           const response = yield fetch(url, {
+            skipSizeCheck: true,
+            // v12.9.4: Evita HEAD invisibles que causan 403
             headers: {
               "User-Agent": USER_AGENT,
               "Referer": origin + "/",
-              "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-              "Accept-Language": "es-MX,es;q=0.9",
-              "Connection": "keep-alive"
+              "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+              "Accept-Language": "es-MX,es;q=0.9,en;q=0.8",
+              "Connection": "keep-alive",
+              "sec-ch-ua": '"Chromium";v="137", "Not-A.Brand";v="24", "Google Chrome";v="137"',
+              "sec-ch-ua-mobile": "?0",
+              "sec-ch-ua-platform": '"Windows"',
+              "Sec-Fetch-Dest": "document",
+              "Sec-Fetch-Mode": "navigate",
+              "Sec-Fetch-Site": "none",
+              "Sec-Fetch-User": "?1",
+              "Upgrade-Insecure-Requests": "1"
             }
           });
           console.log(`[GoodStream] Status: ${response.status}`);
           if (!response.ok)
             return null;
           const html = yield response.text();
-          console.log(`[GoodStream] HTML Length: ${html.length}`);
           let videoUrl = null;
           const fileMatch = html.match(/file:\s*"([^"]+)"/);
           if (fileMatch) {
@@ -651,9 +660,8 @@ var require_goodstream = __commonJS({
                 "Origin": origin,
                 "User-Agent": USER_AGENT,
                 "Accept-Language": "es-MX,es;q=0.9",
-                "Sec-Fetch-Mode": "cors",
-                "Sec-Fetch-Site": "cross-site",
-                "Sec-Fetch-Dest": "empty"
+                "skipSizeCheck": "true"
+                // También para el reproductor
               }
             };
           }
@@ -903,7 +911,7 @@ var require_extractor = __commonJS({
         for (const s of slugs) {
           const url = `${HOST}/pelicula/${s}/`;
           try {
-            const res = yield fetch(url, { headers: HEADERS });
+            const res = yield fetch(url, { headers: HEADERS, skipSizeCheck: true });
             if (res.ok) {
               const html = yield res.text();
               if (html.includes('data-src="')) {
@@ -926,7 +934,7 @@ var require_extractor = __commonJS({
       return __async(this, null, function* () {
         try {
           const url = `${HOST}/?s=${encodeURIComponent(query)}`;
-          const res = yield fetch(url, { headers: HEADERS });
+          const res = yield fetch(url, { headers: HEADERS, skipSizeCheck: true });
           if (!res.ok)
             return [];
           const html = yield res.text();
@@ -948,7 +956,7 @@ var require_extractor = __commonJS({
       return __async(this, null, function* () {
         try {
           console.log(`[CineCalidad] Extrayendo de: ${movieUrl}`);
-          const res = yield fetch(movieUrl, { headers: HEADERS });
+          const res = yield fetch(movieUrl, { headers: HEADERS, skipSizeCheck: true });
           if (!res.ok)
             return [];
           const html = yield res.text();
@@ -965,7 +973,7 @@ var require_extractor = __commonJS({
           for (const url of embedUrls) {
             if (url.includes("cinecalidad") && url.includes("?id=")) {
               try {
-                const midRes = yield fetch(url, { headers: HEADERS });
+                const midRes = yield fetch(url, { headers: HEADERS, skipSizeCheck: true });
                 if (midRes.ok) {
                   const midHtml = yield midRes.text();
                   const btnMatch = midHtml.match(/id="btn_enlace"[^>]*href="([^"]+)"/);
