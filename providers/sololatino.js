@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-28T22:39:55.121Z
+ * Generado: 2026-04-29T14:38:34.344Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;

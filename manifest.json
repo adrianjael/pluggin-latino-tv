@@ -1,12 +1,12 @@
 {
     "name": "Latino - AdrianJael",
-    "version": "2.9.7",
+    "version": "2.9.8",
     "scrapers": [
         {
             "id": "embed69",
             "name": "Embed69",
             "description": "Latino - si tiene ✅= Calidad Real, si no = Calidad Genérica",
-            "version": "1.3.45",
+            "version": "1.3.46",
             "author": "AdrianJael",
             "supportedTypes": [
                 "movie",

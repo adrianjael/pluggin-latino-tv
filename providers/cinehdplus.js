@@ -1,6 +1,6 @@
 /**
  * cinehdplus - Plugin Nuvio
- * Generado: 2026-04-28T22:39:55.101Z
+ * Generado: 2026-04-29T14:38:34.327Z
  */
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __commonJS = (cb, mod) => function __require() {
@@ -274,33 +274,79 @@ var require_streamwish = __commonJS({
       return __async(this, null, function* () {
         try {
           console.log(`[Resolvers] Resolviendo Streamwish: ${url}`);
-          let fetchUrl = url.replace("hglink.to", "vibuxer.com");
-          const originMatch = fetchUrl.match(/^(https?:\/\/[^\/]+)/);
-          const origin = originMatch ? originMatch[1] : "";
-          const response = yield fetch(fetchUrl, {
-            headers: {
-              "User-Agent": USER_AGENT,
-              "Referer": "https://embed69.org/",
-              "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"
+          const domains = [
+            "vibuxer.com",
+            "awish.pro",
+            "dwish.pro",
+            "streamwish.to",
+            "embedwish.com",
+            "strish.com",
+            "wishembed.pro"
+          ];
+          let success = false;
+          let html = "";
+          let finalOrigin = "";
+          if (!url.includes("hglink.to")) {
+            try {
+              const res = yield fetch(url, { headers: { "User-Agent": USER_AGENT, "Referer": "https://embed69.org/" } });
+              if (res.ok) {
+                html = yield res.text();
+                finalOrigin = new URL(url).origin;
+                if (html.includes(".m3u8") || html.includes("eval(function"))
+                  success = true;
+              }
+            } catch (e) {
             }
-          });
-          const html = yield response.text();
+          }
+          if (!success) {
+            for (const domain of domains) {
+              try {
+                const fetchUrl = url.replace(/[^/]+\.(?:com|to|pro|net|org)/, domain);
+                console.log(`[Streamwish] Probando espejo: ${domain}`);
+                const res = yield fetch(fetchUrl, { headers: { "User-Agent": USER_AGENT, "Referer": "https://embed69.org/" } });
+                if (res.ok) {
+                  html = yield res.text();
+                  finalOrigin = `https://${domain}`;
+                  if (html.includes(".m3u8") || html.includes("eval(function")) {
+                    success = true;
+                    break;
+                  }
+                }
+              } catch (e) {
+              }
+            }
+          }
+          if (!success) {
+            console.error(`[Streamwish] No se pudo obtener contenido v\xE1lido de ning\xFAn espejo.`);
+            return null;
+          }
+          const m3u8Direct = html.match(/https?:\/\/[^"'\s\\]+\.m3u8[^"'\s\\]*/i);
+          if (m3u8Direct) {
+            console.log(`[Streamwish] Enlace m3u8 directo encontrado.`);
+            return { url: m3u8Direct[0], quality: "Auto", headers: { "Referer": finalOrigin + "/" } };
+          }
           const evalMatch = html.match(/eval\(function\(p,a,c,k,e,[rd]\)[\s\S]*?\.split\('\|'\)[^\)]*\)\)/);
           let contentToSearch = html;
           if (evalMatch) {
-            contentToSearch += "\n" + unpack(evalMatch[0]);
+            try {
+              console.log(`[Streamwish] Packer detectado, desempaquetando...`);
+              contentToSearch += "\n" + unpack(evalMatch[0]);
+            } catch (e) {
+            }
           }
-          const fileMatch = contentToSearch.match(/(?:file|source|src)\s*:\s*["']([^"']+\.(?:m3u8|mp4)[^"']*)["']/i);
+          const fileMatch = contentToSearch.match(/(?:file|source|src|hls)\s*[:=]\s*["']([^"']+\.(?:m3u8|mp4)[^"']*)['"]/i);
           if (fileMatch) {
             let streamUrl = fileMatch[1];
             if (streamUrl.startsWith("/")) {
-              streamUrl = origin + streamUrl;
+              streamUrl = finalOrigin + streamUrl;
             }
-            return { url: streamUrl, quality: "Auto", headers: { "Referer": origin + "/" } };
+            console.log(`[Streamwish] \xC9xito: Enlace extra\xEDdo.`);
+            return { url: streamUrl, quality: "Auto", headers: { "Referer": finalOrigin + "/" } };
           }
           const m3u8Fallback = contentToSearch.match(/https?:\/\/[^"'\s\\]+\.m3u8[^"'\s\\]*/i);
           if (m3u8Fallback) {
-            return { url: m3u8Fallback[0], quality: "Auto", headers: { "Referer": origin + "/" } };
+            console.log(`[Streamwish] \xC9xito: Enlace m3u8 encontrado en fallback.`);
+            return { url: m3u8Fallback[0], quality: "Auto", headers: { "Referer": finalOrigin + "/" } };
           }
           return null;
         } catch (e) {
@@ -331,18 +377,27 @@ var require_vidhide = __commonJS({
               "Referer": referer
             }
           });
+          if (!response.ok) {
+            console.error(`[VidHide] Error de red: ${response.status}`);
+            return null;
+          }
           const html = yield response.text();
           const evalMatch = html.match(/eval\(function\(p,a,c,k,e,[rd]\)[\s\S]*?\.split\('\|'\)[^\)]*\)\)/);
           let contentToSearch = html;
           if (evalMatch) {
+            console.log(`[VidHide] Packer detectado, desempaquetando...`);
             contentToSearch = unpack(evalMatch[0]);
           }
-          const hls4 = contentToSearch.match(/"?hls4"?\s*:\s*"([^"]+)"/);
-          const hls2 = contentToSearch.match(/"?hls2"?\s*:\s*"([^"]+)"/);
-          const link = (_a = hls4 || hls2) == null ? void 0 : _a[1];
-          if (!link)
+          const hls2 = contentToSearch.match(/"?hls2"?\s*[:=]\s*"([^"]+)"/i);
+          const hls4 = contentToSearch.match(/"?hls4"?\s*[:=]\s*"([^"]+)"/i);
+          const fileMatch = contentToSearch.match(/["']?file["']?\s*[:=]\s*["']([^"']+\.m3u8[^"']*)["']/i);
+          const link = (_a = hls2 || hls4 || fileMatch) == null ? void 0 : _a[1];
+          if (!link) {
+            console.error(`[VidHide] No se encontr\xF3 el enlace m3u8 en el contenido.`);
             return null;
+          }
           let finalUrl = link.startsWith("http") ? link : `${origin}${link}`;
+          console.log(`[VidHide] \xC9xito: Enlace extra\xEDdo.`);
           return {
             url: finalUrl,
             quality: "1080p",
