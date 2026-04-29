@@ -1,6 +1,6 @@
 /**
  * cinehdplus - Plugin Nuvio
- * Generado: 2026-04-29T14:38:34.327Z
+ * Generado: 2026-04-29T14:40:59.472Z
  */
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __commonJS = (cb, mod) => function __require() {
@@ -366,7 +366,6 @@ var require_vidhide = __commonJS({
     var USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
     function resolveVidhide(url, customReferer) {
       return __async(this, null, function* () {
-        var _a;
         try {
           console.log(`[Resolvers] Resolviendo VidHide: ${url}`);
           const origin = new URL(url).origin;
@@ -381,19 +380,48 @@ var require_vidhide = __commonJS({
             console.error(`[VidHide] Error de red: ${response.status}`);
             return null;
           }
-          const html = yield response.text();
-          const evalMatch = html.match(/eval\(function\(p,a,c,k,e,[rd]\)[\s\S]*?\.split\('\|'\)[^\)]*\)\)/);
-          let contentToSearch = html;
-          if (evalMatch) {
-            console.log(`[VidHide] Packer detectado, desempaquetando...`);
-            contentToSearch = unpack(evalMatch[0]);
+          let html = yield response.text();
+          if (html.includes("window.location.href") && html.length < 1e3) {
+            const redirectMatch = html.match(/window\.location\.href\s*=\s*['"]([^'"]+)['"]/i);
+            if (redirectMatch) {
+              console.log(`[VidHide] Detectada redirecci\xF3n JS a: ${redirectMatch[1]}`);
+              return resolveVidhide(redirectMatch[1], url);
+            }
           }
-          const hls2 = contentToSearch.match(/"?hls2"?\s*[:=]\s*"([^"]+)"/i);
-          const hls4 = contentToSearch.match(/"?hls4"?\s*[:=]\s*"([^"]+)"/i);
-          const fileMatch = contentToSearch.match(/["']?file["']?\s*[:=]\s*["']([^"']+\.m3u8[^"']*)["']/i);
-          const link = (_a = hls2 || hls4 || fileMatch) == null ? void 0 : _a[1];
+          const evalMatches = html.match(/eval\(function\(p,a,c,k,e,[rd]\)[\s\S]*?\.split\('\|'\)[^\)]*\)\)/g);
+          let contentToSearch = html;
+          if (evalMatches) {
+            console.log(`[VidHide] ${evalMatches.length} Packer(s) detectado(s), desempaquetando...`);
+            evalMatches.forEach((m) => {
+              try {
+                contentToSearch += "\n" + unpack(m);
+              } catch (e) {
+              }
+            });
+          }
+          const patterns = [
+            /"?hls2"?\s*[:=]\s*"([^"]+)"/i,
+            /"?hls4"?\s*[:=]\s*"([^"]+)"/i,
+            /"?file"?\s*[:=]\s*"([^"]+\.m3u8[^"]*)"/i,
+            /"?src"?\s*[:=]\s*"([^"]+\.m3u8[^"]*)"/i,
+            /["']?file["']?\s*[:=]\s*["']([^"']+\.m3u8[^"']*)["']/i
+          ];
+          let link = null;
+          for (const p of patterns) {
+            const m = contentToSearch.match(p);
+            if (m && m[1]) {
+              link = m[1];
+              break;
+            }
+          }
           if (!link) {
-            console.error(`[VidHide] No se encontr\xF3 el enlace m3u8 en el contenido.`);
+            const m3u8Matches = contentToSearch.match(/https?:\/\/[^"'\s\\]+\.m3u8[^"'\s\\]*/g);
+            if (m3u8Matches) {
+              link = m3u8Matches.find((m) => !m.includes("adsystem") && !m.includes("pixel"));
+            }
+          }
+          if (!link) {
+            console.error(`[VidHide] No se encontr\xF3 ning\xFAn enlace m3u8 v\xE1lido.`);
             return null;
           }
           let finalUrl = link.startsWith("http") ? link : `${origin}${link}`;
