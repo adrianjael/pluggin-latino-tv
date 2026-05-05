@@ -1,6 +1,6 @@
 /**
  * embed69 - Plugin Nuvio
- * Generado: 2026-04-29T14:40:59.481Z
+ * Generado: 2026-05-05T14:21:15.701Z
  */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -1082,7 +1082,7 @@ var require_extractor = __commonJS({
                 return {
                   name: `Embed69 - ${embed.servername.charAt(0).toUpperCase() + embed.servername.slice(1).toLowerCase()}`,
                   language: "Latino",
-                  quality: resolved.verified ? `${resolved.quality} \u2705` : resolved.quality || "HD",
+                  quality: resolved.verified ? `${resolved.quality}` : resolved.quality || "HD",
                   url: resolved.url,
                   headers: resolved.headers
                 };

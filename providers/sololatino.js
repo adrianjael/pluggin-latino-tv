@@ -1,6 +1,6 @@
 /**
  * sololatino - Plugin Nuvio
- * Generado: 2026-04-29T14:40:59.493Z
+ * Generado: 2026-05-05T14:21:15.714Z
  */
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -207,7 +207,7 @@ var require_extractor = __commonJS({
                   streams.push({
                     name: `SoloLatino - Directo`,
                     url: finalRes.url,
-                    quality: "1080p \u2705",
+                    quality: "1080p",
                     language: "Latino",
                     // Ya no necesitamos origin, Mediafire va directo. Solo el Referer que vimos en tu cURL.
                     headers: {
